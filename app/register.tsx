@@ -1,4 +1,5 @@
 import { StackNavigationProp } from '@react-navigation/stack';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
     KeyboardAvoidingView,
@@ -39,10 +40,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     // Email validation
     if (!email) {
       setEmailError('Email is required');
-      isValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      setEmailError('Email is invalid');
-      isValid = false;
+      isValid = false;    
     } else {
       setEmailError('');
     }
@@ -51,10 +49,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     if (!password) {
       setPasswordError('Password is required');
       isValid = false;
-    } else if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
-      isValid = false;
-    } else {
+    }
+    else {
       setPasswordError('');
     }
     
@@ -77,12 +73,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
       // Implement your registration logic here
       console.log('Register with:', email, password);
       // Navigate to main app after successful registration
-      // navigation.navigate('Main');
+      router.navigate('/onboarding');
     }
   };
 
   const navigateToSignIn = (): void => {
-    navigation.navigate('SignIn');
+    router.navigate('/sign-in');
   };
 
   return (
@@ -172,30 +168,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               {confirmPasswordError ? <Text className="text-[#FF5252] text-xs mt-1 ml-1">{confirmPasswordError}</Text> : null}
             </View>
             
-            <View className="flex-row items-center mb-6">
-              <TouchableOpacity className="w-5 h-5 rounded border border-[#536B8E] mr-2" />
-              <Text className="text-[#536B8E] text-sm">
-                I agree to the <Text className="text-[#1E4B88] font-medium">Terms & Conditions</Text> and <Text className="text-[#1E4B88] font-medium">Privacy Policy</Text>
-              </Text>
-            </View>
+           
             
             <TouchableOpacity 
-              className="bg-[#4CAF50] h-14 rounded-xl justify-center items-center shadow-md mb-6"
+              className="bg-[#4CAF50] h-14 rounded-xl justify-center items-center shadow-md mb-6 mt-8"
               onPress={handleRegister}
             >
               <Text className="text-white text-lg font-bold">Register</Text>
             </TouchableOpacity>
             
-            <View className="flex-row items-center mb-6">
-              <View className="flex-1 h-[1px] bg-[#E1E5EB]" />
-              <Text className="text-[#536B8E] mx-3 font-medium">OR</Text>
-              <View className="flex-1 h-[1px] bg-[#E1E5EB]" />
-            </View>
-            
-            <TouchableOpacity className="flex-row bg-white h-14 rounded-xl justify-center items-center border border-[#E1E5EB]">
-              <Icon name="google" size={20} color="#1E4B88" />
-              <Text className="text-[#1E4B88] text-base font-medium ml-2">Continue with Google</Text>
-            </TouchableOpacity>
+           
           </View>
           
           <View className="flex-row justify-center items-center py-6">

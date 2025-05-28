@@ -1,4 +1,5 @@
 import { StackNavigationProp } from '@react-navigation/stack';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
     KeyboardAvoidingView,
@@ -37,9 +38,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
     if (!email) {
       setEmailError('Email is required');
       isValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      setEmailError('Email is invalid');
-      isValid = false;
+    
     } else {
       setEmailError('');
     }
@@ -48,9 +47,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
     if (!password) {
       setPasswordError('Password is required');
       isValid = false;
-    } else if (password.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
-      isValid = false;
+   
     } else {
       setPasswordError('');
     }
@@ -63,12 +60,12 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
       // Implement your sign in logic here
       console.log('Sign in with:', email, password);
       // Navigate to main app after successful sign in
-      // navigation.navigate('Main');
+      router.navigate('/(tabs)');
     }
   };
 
   const navigateToRegister = (): void => {
-    navigation.navigate('Register');
+    router.navigate('/register');
   };
 
   return (
@@ -143,16 +140,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
               <Text className="text-white text-lg font-bold">Sign In</Text>
             </TouchableOpacity>
             
-            <View className="flex-row items-center mb-6">
-              <View className="flex-1 h-[1px] bg-[#E1E5EB]" />
-              <Text className="text-[#536B8E] mx-3 font-medium">OR</Text>
-              <View className="flex-1 h-[1px] bg-[#E1E5EB]" />
-            </View>
             
-            <TouchableOpacity className="flex-row bg-white h-14 rounded-xl justify-center items-center border border-[#E1E5EB]">
-              <Icon name="google" size={20} color="#1E4B88" />
-              <Text className="text-[#1E4B88] text-base font-medium ml-2">Continue with Google</Text>
-            </TouchableOpacity>
           </View>
           
           <View className="flex-row justify-center items-center py-6">
