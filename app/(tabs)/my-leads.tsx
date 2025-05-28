@@ -3,20 +3,20 @@ import * as Contacts from 'expo-contacts';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  FlatList,
-  Linking,
-  Modal,
-  Platform,
-  SafeAreaView as RNSafeAreaView,
-  ScrollView,
-  StatusBar,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Animated,
+    Dimensions,
+    FlatList,
+    Linking,
+    Modal,
+    Platform,
+    SafeAreaView as RNSafeAreaView,
+    ScrollView,
+    StatusBar,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -476,17 +476,28 @@ export default function PostSaleDashboardScreen() {
 
   return (
     <>
-      <StatusBar backgroundColor={primaryColor} barStyle="light-content" translucent={true} />
-      <SafeAreaView edges={['right', 'left', 'top']} className="flex-1 bg-gray-50" style={{ backgroundColor: primaryColor }}>
-        {/* Header */}
-        <View className="bg-primary py-5 px-4 flex-row justify-between items-center">
-          <Text className="text-white text-2xl font-bold">Gromo+</Text>
-          <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
-            <Ionicons name="menu" size={28} color="white" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Menu Dropdown */}
+      {/* Status Bar - positioned outside SafeAreaView for proper coloring */}
+      <StatusBar 
+          backgroundColor={primaryColor} 
+          barStyle="light-content" 
+          translucent={true}
+        />
+        
+        {/* Using SafeAreaView with edges to prevent content from going under status bar */}
+        <SafeAreaView 
+          edges={['right', 'left','top']} 
+          className="flex-1 bg-gray-50"
+          style={{ backgroundColor: primaryColor }}
+        >
+         
+      
+      {/* Header */}
+      <View className="bg-primary py-5 px-4 flex-row justify-between items-center">
+        <Text className="text-white text-2xl font-bold">Gromo+</Text>
+       
+      </View>
+        
+        {/* Menu at the top (replacing congratulation banner) */}
         {menuOpen && (
           <View className="absolute top-20 right-4 z-10 bg-white rounded-lg shadow-lg py-2 px-1 w-48">
             <TouchableOpacity className="flex-row items-center py-3 px-4" onPress={() => setMenuOpen(false)}>

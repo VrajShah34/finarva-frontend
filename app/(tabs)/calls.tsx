@@ -1,9 +1,8 @@
-import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  FlatList,
   Image,
+  ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
@@ -14,31 +13,36 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 const primaryColor = "#04457E"; 
 
-interface CallItem {
+interface LeadItem {
   id: string;
   name: string;
   image: any;
   type: string;
   status: string;
-  lastCallDate: string;
-  lastCallTime: string;
   policyEndDate: string;
+  lastCall?: {
+    date: string;
+    time: string;
+  };
 }
 
 const CallsScreen = () => {
-  const navigation = useNavigation();
+  // Added state for active filter
+  const [activeFilter, setActiveFilter] = useState<'all' | 'called'>('all');
   
-  // Example data for recent calls
-  const recentCalls = [
+  // Example data for leads
+  const leads = [
     {
       id: '1',
       name: 'Ajay Sharma',
       image: require('../../assets/images/react-logo.png'),
       type: 'Term Insurance',
       status: 'Active',
-      lastCallDate: '15 May 2024',
-      lastCallTime: '2:30 PM',
-      policyEndDate: '12 Aug 2024'
+      policyEndDate: '12 Aug 2024',
+      lastCall: {
+        date: '15 May 2024',
+        time: '2:30 PM'
+      }
     },
     {
       id: '2',
@@ -46,9 +50,11 @@ const CallsScreen = () => {
       image: require('../../assets/images/react-logo.png'),
       type: 'Health Insurance',
       status: 'Active',
-      lastCallDate: '18 May 2024',
-      lastCallTime: '11:15 AM',
-      policyEndDate: '22 Jun 2024'
+      policyEndDate: '22 Jun 2024',
+      lastCall: {
+        date: '18 May 2024',
+        time: '11:15 AM'
+      }
     },
     {
       id: '3',
@@ -56,9 +62,8 @@ const CallsScreen = () => {
       image: require('../../assets/images/react-logo.png'),
       type: 'Investment Plan',
       status: 'Active',
-      lastCallDate: '12 May 2024',
-      lastCallTime: '4:45 PM',
-      policyEndDate: '10 Sep 2024'
+      policyEndDate: '10 Sep 2024',
+      // No last call - new lead
     },
     {
       id: '4',
@@ -66,9 +71,11 @@ const CallsScreen = () => {
       image: require('../../assets/images/react-logo.png'),
       type: 'Life Insurance',
       status: 'Active',
-      lastCallDate: '20 May 2024',
-      lastCallTime: '9:20 AM',
-      policyEndDate: '5 Jul 2024'
+      policyEndDate: '5 Jul 2024',
+      lastCall: {
+        date: '20 May 2024',
+        time: '9:20 AM'
+      }
     },
     {
       id: '5',
@@ -76,28 +83,33 @@ const CallsScreen = () => {
       image: require('../../assets/images/react-logo.png'),
       type: 'Car Insurance',
       status: 'Inactive',
-      lastCallDate: '8 May 2024',
-      lastCallTime: '3:10 PM',
-      policyEndDate: '15 Dec 2024'
+      policyEndDate: '15 Dec 2024',
+      // No last call - new lead
     }
   ];
 
+  // Filter leads based on active filter
+  const filteredLeads = useMemo(() => {
+    if (activeFilter === 'called') {
+      return leads.filter(lead => lead.lastCall);
+    }
+    return leads;
+  }, [activeFilter, leads]);
+
   // Function to navigate to call details screen
-  const navigateToCallDetails = (call: CallItem) => {
-    // For Expo Router
+  const navigateToCallDetails = (lead: LeadItem) => {
     router.push('/ai-call-analysis');
   };
 
   // Function to navigate to AI Co-Pilot screen
-  const navigateToAICoPilot = (call: CallItem) => {
-    // For Expo Router - navigate to AI Co-Pilot screen with call data
+  const navigateToAICoPilot = (lead: LeadItem) => {
     router.push({
       pathname: '/ai-copilot',
-      params: { leadName: call.name, leadType: call.type }
+      params: { leadName: lead.name, leadType: lead.type }
     });
   };
 
-  const renderCallItem = ({ item }: { item: CallItem }) => (
+  const renderLeadItem = ({ item }: { item: LeadItem }) => (
     <View className="bg-white rounded-2xl p-5 mb-4 shadow-sm border border-gray-100">
       {/* Card Header */}
       <View className="flex-row justify-between items-start mb-4">
@@ -124,31 +136,43 @@ const CallsScreen = () => {
             {item.policyEndDate}
           </Text>
         </View>
-        <View className="flex-row items-center">
-          <MaterialCommunityIcons name="phone-clock" size={18} color="#6B7280" />
-          <Text className="text-sm text-gray-600 ml-2 font-medium">Last Call:</Text>
-          <Text className="text-sm font-semibold text-gray-800 ml-2">
-            {item.lastCallDate} at {item.lastCallTime}
-          </Text>
-        </View>
+        
+        {item.lastCall ? (
+          <View className="flex-row items-center">
+            <MaterialCommunityIcons name="phone" size={18} color="#6B7280" />
+            <Text className="text-sm text-gray-600 ml-2 font-medium">Last Call:</Text>
+            <Text className="text-sm font-semibold text-gray-800 ml-2">
+              {item.lastCall.date} at {item.lastCall.time}
+            </Text>
+          </View>
+        ) : (
+          <View className="flex-row items-center">
+            <MaterialCommunityIcons name="phone-off" size={18} color="#6B7280" />
+            <Text className="text-sm text-gray-600 ml-2 font-medium">New Lead - No calls yet</Text>
+          </View>
+        )}
       </View>
 
       {/* Button Row */}
       <View className="flex-row gap-3">
-        <TouchableOpacity 
-          className="bg-primary flex-row items-center justify-center py-3 px-5 rounded-xl flex-1 shadow-sm"
-          onPress={() => navigateToCallDetails(item)}
-        >
-          <MaterialCommunityIcons name="eye" size={20} color="white" />
-          <Text className="text-white font-semibold ml-2 text-sm">View Details</Text>
-        </TouchableOpacity>
+        {item.lastCall ? (
+          // If lead has been called before - show View Last Calls Details button
+          <TouchableOpacity 
+            className="bg-primary flex-row items-center justify-center py-3 px-5 rounded-xl flex-1 shadow-sm"
+            onPress={() => navigateToCallDetails(item)}
+          >
+            <MaterialCommunityIcons name="history" size={20} color="white" />
+            <Text className="text-white font-semibold ml-2 text-sm">View Last Call</Text>
+          </TouchableOpacity>
+        ) : null}
         
+        {/* AI Co-Pilot button for all leads */}
         <TouchableOpacity 
           className="bg-blue-50 border border-blue-700 flex-row items-center justify-center py-3 px-5 rounded-xl flex-1"
           onPress={() => navigateToAICoPilot(item)}
         >
           <MaterialCommunityIcons name="robot" size={20} color="#1D4ED8" />
-          <Text className="text-blue-700 font-semibold ml-2 text-sm">AI Co-Pilot</Text>
+          <Text className="text-blue-700 font-semibold ml-2 text-sm">Call with AI Co-Pilot</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -158,63 +182,102 @@ const CallsScreen = () => {
     <>
       {/* Status Bar - positioned outside SafeAreaView for proper coloring */}
       <StatusBar 
-          backgroundColor={primaryColor} 
-          barStyle="light-content" 
-          translucent={true}
-        />
+        backgroundColor={primaryColor} 
+        barStyle="light-content" 
+        translucent={true}
+      />
         
-        {/* Using SafeAreaView with edges to prevent content from going under status bar */}
-        <SafeAreaView 
-          edges={['right', 'left','top']} 
-          className="flex-1 bg-gray-50"
-        >
-         
-      
-      {/* Header */}
-      <View className="bg-primary py-5 px-4 flex-row justify-between items-center">
-        <Text className="text-white text-2xl font-bold">Gromo+</Text>
-      
-      </View>
-      
-      {/* Content Area with Gray Background */}
-      <View className="px-4 pt-6 pb-3">
-          <Text className="text-3xl font-bold text-primary">Calls</Text>
-      </View>
-      <View className="flex-1 bg-gray-50">
-        {/* Cold Calls Button */}
-        <TouchableOpacity 
-          className="bg-white m-4 rounded-2xl p-5 flex-row items-center justify-between shadow-sm border border-gray-100"
-          onPress={() => console.log('Cold calls pressed')}
-        >
-          <View className="flex-row items-center flex-1">
-            <View className="bg-blue-100 w-12 h-12 rounded-full items-center justify-center mr-4">
-              <MaterialCommunityIcons name="phone-plus" size={24} color="#1D4ED8" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-blue-800 font-bold text-lg mb-1">Start Cold Calls</Text>
-              <Text className="text-gray-600 text-sm">
-                Begin new sales calls with AI assistance
-              </Text>
-            </View>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={24} color="#6B7280" />
-        </TouchableOpacity>
+      {/* Using SafeAreaView with edges to prevent content from going under status bar */}
+      <SafeAreaView 
+        edges={['right', 'left','top']} 
+        className="flex-1 bg-gray-50"
+        style={{ backgroundColor: primaryColor }}
         
-        {/* Recent Calls List */}
-        <View className="flex-row justify-between items-center px-4 mb-3 mt-2">
-          <Text className="text-xl font-bold text-gray-900">Recent Calls</Text>
-          <Text className="text-sm text-gray-600 font-medium">{recentCalls.length} calls</Text>
+      >
+        {/* Header - Fixed at top */}
+        <View className="bg-primary py-5 px-4 flex-row justify-between items-center">
+          <Text className="text-white text-2xl font-bold">Gromo+</Text>
         </View>
+      
+        {/* Make the whole content scrollable */}
+        <View className="flex-1 bg-gray-50">
+        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          {/* Content Area with Gray Background */}
+          <View className="px-4 pt-6 pb-3">
+            <Text className="text-3xl font-bold text-primary">Calls</Text>
+          </View>
+          
+          {/* Cold Calls Button */}
+          <TouchableOpacity 
+            className="bg-white mx-4 mb-4 rounded-2xl p-5 flex-row items-center justify-between shadow-sm border border-gray-100"
+            onPress={() => console.log('Cold calls pressed')}
+          >
+            <View className="flex-row items-center flex-1">
+              <View className="bg-blue-100 w-12 h-12 rounded-full items-center justify-center mr-4">
+                <MaterialCommunityIcons name="phone-plus" size={24} color="#1D4ED8" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-blue-800 font-bold text-lg mb-1">Start Cold Calls</Text>
+                <Text className="text-gray-600 text-sm">
+                  Begin new sales calls with AI assistance
+                </Text>
+              </View>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={24} color="#6B7280" />
+          </TouchableOpacity>
+          
+          {/* Filter Tabs */}
+          <View className="flex-row px-4 mb-3">
+            <TouchableOpacity 
+              className={`py-2 px-5 rounded-full mr-2 ${
+                activeFilter === 'all' 
+                  ? 'bg-primary' 
+                  : 'bg-white border border-gray-300'
+              }`}
+              onPress={() => setActiveFilter('all')}
+            >
+              <Text className={`font-semibold ${
+                activeFilter === 'all' ? 'text-white' : 'text-gray-700'
+              }`}>
+                All Leads
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              className={`py-2 px-5 rounded-full ${
+                activeFilter === 'called' 
+                  ? 'bg-primary' 
+                  : 'bg-white border border-gray-300'
+              }`}
+              onPress={() => setActiveFilter('called')}
+            >
+              <Text className={`font-semibold ${
+                activeFilter === 'called' ? 'text-white' : 'text-gray-700'
+              }`}>
+                Previously Called
+              </Text>
+            </TouchableOpacity>
+          </View>
         
-        <FlatList
-          data={recentCalls}
-          renderItem={renderCallItem}
-          keyExtractor={item => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
-    </SafeAreaView>
+          {/* Leads List */}
+          <View className="flex-row justify-between items-center px-4 mb-3">
+            <Text className="text-xl font-bold text-gray-900">My Leads</Text>
+            <Text className="text-sm text-gray-600 font-medium">
+              {filteredLeads.length} {activeFilter === 'called' ? 'called' : 'leads'}
+            </Text>
+          </View>
+        
+          {/* Using regular View instead of FlatList for ScrollView compatibility */}
+          <View className="px-4 pb-6">
+            {filteredLeads.map(item => (
+              <View key={item.id}>
+                {renderLeadItem({ item })}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+        </View>
+      </SafeAreaView>
     </>
   );
 };
