@@ -235,9 +235,9 @@ export default function QuizScreen() {
         </View>
       </Modal>
       
-      <View className="flex-1 bg-gray-100">
+      <View className="flex-1 bg-gray-100 mt-10">
         {/* Header */}
-        <View className="bg-[#1a4689] px-5 py-4">
+        <View className="bg-[#1a4689] px-5 pt-6 pb-4">
           <View className="flex-row items-center justify-between">
             <TouchableOpacity onPress={handleBackPress} className="flex-row items-center">
               <Ionicons name="arrow-back" size={24} color="white" />
@@ -245,9 +245,7 @@ export default function QuizScreen() {
                 Knowledge Assessment Quiz
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity>
-              <Ionicons name="volume-medium" size={24} color="white" />
-            </TouchableOpacity>
+            
           </View>
           
           <Text className="text-white text-center mt-2">
@@ -256,7 +254,7 @@ export default function QuizScreen() {
         </View>
         
         {/* Progress Bar */}
-        <View className="flex-row items-center justify-between px-10 py-4 bg-white">
+        <View className="flex-row items-center justify-between px-10 py-4 bg-white rounded-t-xl shadow-sm">
           <View className={`w-10 h-10 rounded-full ${currentSection >= 1 ? 'bg-teal-500' : 'bg-gray-300'} items-center justify-center`}>
             <Text className="text-white font-bold">1</Text>
           </View>

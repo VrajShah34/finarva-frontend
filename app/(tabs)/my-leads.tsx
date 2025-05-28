@@ -107,30 +107,26 @@ export default function PostSaleDashboardScreen() {
     <>
       {/* Status Bar - positioned outside SafeAreaView for proper coloring */}
       <StatusBar 
-        backgroundColor={primaryColor} 
-        barStyle="light-content" 
-        translucent={Platform.OS === 'android'}
-      />
-      
-      {/* Using SafeAreaView with edges to prevent content from going under status bar */}
-      <SafeAreaView 
-        edges={['right', 'left','top']} 
-        className="flex-1 bg-gray-50"
-        style={{ backgroundColor: primaryColor }}
-      >
-        {/* <Stack.Screen options={{ 
-          headerShown: false,
-          animation: 'slide_from_right',
-          statusBarStyle: 'light', // For iOS
-        }} /> */}
+          backgroundColor={primaryColor} 
+          barStyle="light-content" 
+          translucent={true}
+        />
         
-        {/* Header Area */}
-        <View className="py-5 px-4 flex-row justify-between items-center" style={{ backgroundColor: primaryColor }}>
-          <Text className="text-white text-xl font-bold">My Leads</Text>
-          <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
-            <Ionicons name="menu" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
+        {/* Using SafeAreaView with edges to prevent content from going under status bar */}
+        <SafeAreaView 
+          edges={['right', 'left','top']} 
+          className="flex-1 bg-gray-50"
+          style={{ backgroundColor: primaryColor }}
+        >
+         
+      
+      {/* Header */}
+      <View className="bg-primary py-5 px-4 flex-row justify-between items-center">
+        <Text className="text-white text-2xl font-bold">Gromo+</Text>
+        <TouchableOpacity>
+          <Ionicons name="menu" size={28} color="white" />
+        </TouchableOpacity>
+      </View>
         
         {/* Menu at the top (replacing congratulation banner) */}
         {menuOpen && (
@@ -157,6 +153,9 @@ export default function PostSaleDashboardScreen() {
         {/* Content Area */}
         <View className="flex-1 bg-gray-50">
           <ScrollView>
+            <View className="px-4 pt-4 pb-4">
+              <Text className="text-3xl font-bold text-primary">My Leads</Text>
+            </View>
             {/* Buy Leads Button - Replacing the congratulation banner */}
             <TouchableOpacity 
               className="mx-4 mt-4 rounded-2xl p-4 flex-row justify-between items-center"

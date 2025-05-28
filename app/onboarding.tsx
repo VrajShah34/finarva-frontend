@@ -313,295 +313,304 @@ export default function OnboardingScreen() {
           onPress={handleOutsidePress} 
           style={{ flex: 1 }}
         >
-          <ScrollView 
-            ref={scrollViewRef}
-            className="px-6"
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: isKeyboardVisible ? keyboardHeight + 100 : 40 }}
-            showsVerticalScrollIndicator={false}
-          >
-            <View className="pt-6">
-              {!formCompleted ? (
-                // Form Fields Section
-                <>
-                  {/* Header */}
-                  <View className="mb-8">
-                    <Text className="text-[#04457E] text-2xl font-bold mb-2">
-                      Let's personalize your journey
-                    </Text>
-                    <Text className="text-gray-500 text-base">
-                      Fill in your basic details to begin.
-                    </Text>
-                  </View>
-                  {/* Form Fields */}
-                  {formStep === 1 ? (
-                    <View className="space-y-6">
-                      {/* Full Name */}
-                      <View>
-                        <Text className="text-gray-700 font-medium mb-2">Full Name </Text>
-                        <TextInput
-                          className="border border-gray-300 rounded-lg py-3 px-4 bg-white"
-                          value={formData.fullName}
-                          onChangeText={(text) => setFormData({...formData, fullName: text})}
-                          placeholder="Enter your full name"
-                          placeholderTextColor="#9ca3af"
-                          onFocus={() => setCurrentFocusedInput('fullName')}
-                          onBlur={() => setCurrentFocusedInput(null)}
-                        />
-                      </View>
-                      
-                      {/* Age */}
-                      <View>
-                        <Text className="text-gray-700 font-medium mb-2 mt-3">Age </Text>
-                        <TextInput
-                          className="border border-gray-300 rounded-lg py-3 px-4 bg-white"
-                          value={formData.age}
-                          onChangeText={(text) => setFormData({...formData, age: text})}
-                          keyboardType="numeric"
-                          placeholder="Enter your age"
-                          placeholderTextColor="#9ca3af"
-                          onFocus={() => setCurrentFocusedInput('age')}
-                          onBlur={() => setCurrentFocusedInput(null)}
-                        />
-                      </View>
-                      
-                      {/* Gender */}
-                      <View>
-                        <Text className="text-gray-700 font-medium mb-2 mt-3">Gender </Text>
-                        <TouchableOpacity 
-                          className="border border-gray-300 rounded-lg py-3 px-4 bg-white flex-row justify-between items-center"
-                          onPress={() => setGenderModalVisible(true)}
-                        >
-                          <Text className={formData.gender ? "text-black" : "text-gray-400"}>
-                            {formData.gender || "Select your gender"}
-                          </Text>
-                          <Ionicons name="chevron-down" size={20} color="#6b7280" />
-                        </TouchableOpacity>
-                      </View>
-                        
-                      {/* Region/Pin Code */}
-                      <View>
-                        <Text className="text-gray-700 font-medium mb-2 mt-3">Region / Pin Code</Text>
-                        <View className="flex-row items-center">
+          <View style={{ flex: 1 }}>
+            <ScrollView 
+              ref={scrollViewRef}
+              className="px-6 flex-1"
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 20 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <View className="pt-6">
+                {!formCompleted ? (
+                  // Form Fields Section
+                  <>
+                    {/* Header */}
+                    <View className="mb-12 pt-12">
+                      <Text className="text-[#04457E] text-2xl font-bold mb-2">
+                        Let's personalize your journey
+                      </Text>
+                      <Text className="text-gray-500 text-base">
+                        Fill in your basic details to begin.
+                      </Text>
+                    </View>
+                    {/* Form Fields */}
+                    {formStep === 1 ? (
+                      <View className="space-y-6">
+                        {/* Full Name */}
+                        <View>
+                          <Text className="text-gray-700 font-medium mb-2">Full Name </Text>
                           <TextInput
-                            className="border border-gray-300 rounded-lg py-3 px-4 bg-white flex-1"
-                            value={formData.region}
-                            onChangeText={(text) => setFormData({...formData, region: text})}
-                            placeholder="Enter your region or pin code"
+                            className="border border-gray-300 rounded-lg py-3 px-4 bg-white"
+                            value={formData.fullName}
+                            onChangeText={(text) => setFormData({...formData, fullName: text})}
+                            placeholder="Enter your full name"
                             placeholderTextColor="#9ca3af"
-                            onFocus={() => setCurrentFocusedInput('region')}
+                            onFocus={() => setCurrentFocusedInput('fullName')}
                             onBlur={() => setCurrentFocusedInput(null)}
                           />
-                          <TouchableOpacity 
-                            className="ml-3 bg-gray-200 rounded-lg px-4 py-3 flex-row items-center"
-                            onPress={handleAutoDetect}
-                          >
-                            <Ionicons name="location" size={16} />
-                            <Text className="ml-1 font-medium">Auto</Text>
-                          </TouchableOpacity>
                         </View>
-                        <Text className="text-gray-400 text-xs mt-1 ml-1">Auto-detect enabled. You may edit if needed.</Text>
-                      </View>
                         
-                      {/* Language Preferences */}
-                      <View>
-                        <Text className="text-gray-700 font-medium mb-3 mt-4">
-                          Which languages do you prefer for communication with your AI coach?
-                        </Text>
-                        <View className="flex-row flex-wrap gap-2 mb-2">
-                          {languages.map((lang) => (
-                            <TouchableOpacity 
-                              key={lang}
-                              className={`py-2.5 px-5 rounded-full flex-row items-center ${
-                                formData.languages.includes(lang) ? 'bg-[#18FFAA]' : 'bg-gray-100'
-                              }`}
-                              onPress={() => toggleLanguage(lang)}
-                            >
-                              {formData.languages.includes(lang) && (
-                                <Ionicons name="checkmark" size={16} color="#04457E" className="mr-1" />
-                              )}
-                              <Text className={formData.languages.includes(lang) ? 'text-[#04457E] font-medium' : 'text-gray-800'}>
-                                {lang}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
+                        {/* Age */}
+                        <View>
+                          <Text className="text-gray-700 font-medium mb-2 mt-3">Age </Text>
+                          <TextInput
+                            className="border border-gray-300 rounded-lg py-3 px-4 bg-white"
+                            value={formData.age}
+                            onChangeText={(text) => setFormData({...formData, age: text})}
+                            keyboardType="numeric"
+                            placeholder="Enter your age"
+                            placeholderTextColor="#9ca3af"
+                            onFocus={() => setCurrentFocusedInput('age')}
+                            onBlur={() => setCurrentFocusedInput(null)}
+                          />
                         </View>
-                        <Text className="text-gray-400 text-xs mt-1">
-                          Your preference guides AI's language and voice style.
-                        </Text>
-                      </View>
-                      
-                      {/* Continue Button */}
-                      <TouchableOpacity 
-                        className="bg-[#04457E] py-4 rounded-xl mt-6 shadow-sm"
-                        onPress={handleSubmit}
-                      >
-                        <Text className="text-white text-center font-bold text-lg">Continue</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View className="space-y-6">
-                      {/* Work Background */}
-                      <View>
-                        <Text className="text-gray-700 font-medium mb-4">Tell us a bit about your work background.</Text>
                         
-                        {/* Occupation */}
-                        <View className="flex-row items-center justify-between mb-5">
-                          <Text className="text-gray-700 font-medium w-1/3">Occupation</Text>
+                        {/* Gender */}
+                        <View>
+                          <Text className="text-gray-700 font-medium mb-2 mt-3">Gender </Text>
                           <TouchableOpacity 
-                            className="border border-gray-300 rounded-lg py-3 px-4 flex-row justify-between items-center flex-1"
-                            onPress={() => setOccupationModalVisible(true)}
+                            className="border border-gray-300 rounded-lg py-3 px-4 bg-white flex-row justify-between items-center"
+                            onPress={() => setGenderModalVisible(true)}
                           >
-                            <Text className={formData.occupation ? "text-black" : "text-gray-400"}>
-                              {formData.occupation || "Select occupation"}
+                            <Text className={formData.gender ? "text-black" : "text-gray-400"}>
+                              {formData.gender || "Select your gender"}
                             </Text>
                             <Ionicons name="chevron-down" size={20} color="#6b7280" />
                           </TouchableOpacity>
                         </View>
-                        
-                        {/* Finance Experience */}
-                        <View className="flex-row items-center justify-between mb-5">
-                          <Text className="text-gray-700 font-medium w-1/3">Finance Exp?</Text>
-                          <View className="flex-row flex-1">
+                          
+                        {/* Region/Pin Code */}
+                        <View>
+                          <Text className="text-gray-700 font-medium mb-2 mt-3">Region / Pin Code</Text>
+                          <View className="flex-row items-center">
+                            <TextInput
+                              className="border border-gray-300 rounded-lg py-3 px-4 bg-white flex-1"
+                              value={formData.region}
+                              onChangeText={(text) => setFormData({...formData, region: text})}
+                              placeholder="Enter your region or pin code"
+                              placeholderTextColor="#9ca3af"
+                              onFocus={() => setCurrentFocusedInput('region')}
+                              onBlur={() => setCurrentFocusedInput(null)}
+                            />
                             <TouchableOpacity 
-                              className={`rounded-full py-2.5 px-6 mr-3 ${formData.financeExp === 'Yes' ? 'bg-[#18FFAA]' : 'bg-gray-100'}`}
-                              onPress={() => handleFinanceExpToggle('Yes')}
+                              className="ml-3 bg-gray-200 rounded-lg px-4 py-3 flex-row items-center"
+                              onPress={handleAutoDetect}
                             >
-                              <Text className={`text-center ${formData.financeExp === 'Yes' ? 'text-[#04457E] font-medium' : 'text-gray-800'}`}>Yes</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                              className={`rounded-full py-2.5 px-6 ${formData.financeExp === 'No' ? 'bg-[#18FFAA]' : 'bg-gray-100'}`}
-                              onPress={() => handleFinanceExpToggle('No')}
-                            >
-                              <Text className={`text-center ${formData.financeExp === 'No' ? 'text-[#04457E] font-medium' : 'text-gray-800'}`}>No</Text>
+                              <Ionicons name="location" size={16} />
+                              <Text className="ml-1 font-medium">Auto</Text>
                             </TouchableOpacity>
                           </View>
+                          <Text className="text-gray-400 text-xs mt-1 ml-1">Auto-detect enabled. You may edit if needed.</Text>
                         </View>
-                        
-                        {/* Experience Years */}
-                        <View className="flex-row items-center">
-                          <Text className="text-gray-700 font-medium w-1/3">Exp. Years</Text>
-                          <TextInput
-                            className="border border-gray-300 rounded-lg py-2.5 px-4 w-24 text-center"
-                            value={formData.expYears}
-                            onChangeText={(text) => setFormData({...formData, expYears: text})}
-                            keyboardType="numeric"
-                            placeholder="0"
-                            placeholderTextColor="#9ca3af"
-                            onFocus={() => setCurrentFocusedInput('expYears')}
-                            onBlur={() => setCurrentFocusedInput(null)}
-                          />
-                          <Text className="ml-3 text-gray-600">years</Text>
+                          
+                        {/* Language Preferences */}
+                        <View>
+                          <Text className="text-gray-700 font-medium mb-3 mt-4">
+                            Which languages do you prefer for communication with your AI coach?
+                          </Text>
+                          <View className="flex-row flex-wrap gap-2 mb-2">
+                            {languages.map((lang) => (
+                              <TouchableOpacity 
+                                key={lang}
+                                className={`py-2.5 px-5 rounded-full flex-row items-center ${
+                                  formData.languages.includes(lang) ? 'bg-[#18FFAA]' : 'bg-gray-100'
+                                }`}
+                                onPress={() => toggleLanguage(lang)}
+                              >
+                                {formData.languages.includes(lang) && (
+                                  <Ionicons name="checkmark" size={16} color="#04457E" className="mr-1" />
+                                )}
+                                <Text className={formData.languages.includes(lang) ? 'text-[#04457E] font-medium' : 'text-gray-800'}>
+                                  {lang}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                          <Text className="text-gray-400 text-xs mt-1">
+                            Your preference guides AI's language and voice style.
+                          </Text>
                         </View>
+                      </View>
+                    ) : (
+                      <View className="space-y-6">
+                        {/* Work Background */}
+                        <View>
+                          <Text className="text-gray-700 font-medium mb-4">Tell us a bit about your work background.</Text>
+                          
+                          {/* Occupation */}
+                          <View className="flex-row items-center justify-between mb-5">
+                            <Text className="text-gray-700 font-medium w-1/3">Occupation</Text>
+                            <TouchableOpacity 
+                              className="border border-gray-300 rounded-lg py-3 px-4 flex-row justify-between items-center flex-1"
+                              onPress={() => setOccupationModalVisible(true)}
+                            >
+                              <Text className={formData.occupation ? "text-black" : "text-gray-400"}>
+                                {formData.occupation || "Select occupation"}
+                              </Text>
+                              <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                            </TouchableOpacity>
+                          </View>
+                          
+                          {/* Finance Experience */}
+                          <View className="flex-row items-center justify-between mb-5">
+                            <Text className="text-gray-700 font-medium w-1/3">Finance Exp?</Text>
+                            <View className="flex-row flex-1">
+                              <TouchableOpacity 
+                                className={`rounded-full py-2.5 px-6 mr-3 ${formData.financeExp === 'Yes' ? 'bg-[#18FFAA]' : 'bg-gray-100'}`}
+                                onPress={() => handleFinanceExpToggle('Yes')}
+                              >
+                                <Text className={`text-center ${formData.financeExp === 'Yes' ? 'text-[#04457E] font-medium' : 'text-gray-800'}`}>Yes</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity 
+                                className={`rounded-full py-2.5 px-6 ${formData.financeExp === 'No' ? 'bg-[#18FFAA]' : 'bg-gray-100'}`}
+                                onPress={() => handleFinanceExpToggle('No')}
+                              >
+                                <Text className={`text-center ${formData.financeExp === 'No' ? 'text-[#04457E] font-medium' : 'text-gray-800'}`}>No</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                          
+                          {/* Experience Years */}
+                          <View className="flex-row items-center">
+                            <Text className="text-gray-700 font-medium w-1/3">Exp. Years</Text>
+                            <TextInput
+                              className="border border-gray-300 rounded-lg py-2.5 px-4 w-24 text-center"
+                              value={formData.expYears}
+                              onChangeText={(text) => setFormData({...formData, expYears: text})}
+                              keyboardType="numeric"
+                              placeholder="0"
+                              placeholderTextColor="#9ca3af"
+                              onFocus={() => setCurrentFocusedInput('expYears')}
+                              onBlur={() => setCurrentFocusedInput(null)}
+                            />
+                            <Text className="ml-3 text-gray-600">years</Text>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  // AI Persona and Profile Summary Section
+                  <>
+                    {/* Assigned AI Persona Card */}
+                    <View className="bg-gray-50 rounded-xl p-5 mb-6">
+                      <View className="flex-row items-center mb-2">
+                        <View className="h-5 w-5 rounded-full bg-[#18FFAA] mr-2" />
+                        <Text className="text-[#04457E] text-lg font-bold">Assigned AI Persona</Text>
                       </View>
                       
-                      {/* Submit Button */}
-                      <TouchableOpacity 
-                        className="bg-[#04457E] py-4 rounded-xl mt-6 shadow-sm"
-                        onPress={handleSubmit}
-                      >
-                        <Text className="text-white text-center font-bold text-lg">Submit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </>
-              ) : (
-                // AI Persona and Profile Summary Section
-                <>
-                  {/* Assigned AI Persona Card */}
-                  <View className="bg-gray-50 rounded-xl p-5 mb-6">
-                    <View className="flex-row items-center mb-2">
-                      <View className="h-5 w-5 rounded-full bg-[#18FFAA] mr-2" />
-                      <Text className="text-[#04457E] text-lg font-bold">Assigned AI Persona</Text>
-                    </View>
-                    
-                    <Text className="text-[#04457E] text-xl font-semibold mb-3">
-                      "Confident Seller – Multilingual Urban Male with Experience"
-                    </Text>
-                    
-                    <View className="mb-2 flex-row">
-                      <View style={{ width: 20 }}>
-                        <Ionicons name="navigate-circle" size={16} color="#04457E" />
+                      <Text className="text-[#04457E] text-xl font-semibold mb-3">
+                        "Confident Seller – Multilingual Urban Male with Experience"
+                      </Text>
+                      
+                      <View className="mb-2 flex-row">
+                        <View style={{ width: 20 }}>
+                          <Ionicons name="navigate-circle" size={16} color="#04457E" />
+                        </View>
+                        <Text className="text-black">
+                          <Text className="text-[#04457E] font-semibold">Recommended: </Text>
+                          Health Insurance, Monthly Plans
+                        </Text>
                       </View>
-                      <Text className="text-black">
-                        <Text className="text-[#04457E] font-semibold">Recommended: </Text>
-                        Health Insurance, Monthly Plans
-                      </Text>
-                    </View>
-                    
-                    <View className="mb-3 flex-row">
-                      <View style={{ width: 20 }}>
-                        <Ionicons name="volume-medium" size={16} color="#04457E" />
+                      
+                      <View className="mb-3 flex-row">
+                        <View style={{ width: 20 }}>
+                          <Ionicons name="volume-medium" size={16} color="#04457E" />
+                        </View>
+                        <Text className="text-black">
+                          <Text className="text-[#04457E] font-semibold">AI Voice Tone: </Text>
+                          Friendly, Local Accent (Marathi + Hindi)
+                        </Text>
                       </View>
-                      <Text className="text-black">
-                        <Text className="text-[#04457E] font-semibold">AI Voice Tone: </Text>
-                        Friendly, Local Accent (Marathi + Hindi)
-                      </Text>
+                      
+                      <Text className="text-gray-500 text-xs mb-2">Generated Prompt (passed to AI engine):</Text>
+                      
+                      <View className="bg-white rounded-lg p-3">
+                        <Text className="font-mono text-xs text-gray-800">
+                          {generatedPromptJson}
+                        </Text>
+                      </View>
                     </View>
                     
-                    <Text className="text-gray-500 text-xs mb-2">Generated Prompt (passed to AI engine):</Text>
-                    
-                    <View className="bg-white rounded-lg p-3">
-                      <Text className="font-mono text-xs text-gray-800">
-                        {generatedPromptJson}
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  {/* Profile Summary Card */}
-                  <View className="bg-gray-50 rounded-xl p-5 mb-6">
-                    <View className="flex-row items-center mb-4">
-                      <Ionicons name="person-outline" size={18} color="#04457E" />
-                      <Text className="text-[#04457E] text-lg font-bold ml-2">Profile Summary</Text>
-                    </View>
-                    
-                    {/* Name, Age and Gender */}
-                    <View className="flex-row items-center mb-3">
-                      <Ionicons name="person" size={16} color="#04457E" />
-                      <Text className="text-[#04457E] font-semibold ml-2">{formData.fullName}</Text>
-                      <Text className="text-gray-600 ml-2">• {formData.age} • {formData.gender}</Text>
-                    </View>
-                    
-                    {/* Location */}
-                    <View className="flex-row items-center mb-3">
-                      <Ionicons name="location" size={16} color="#e53e3e" />
-                      <Text className="text-gray-700 ml-2">Pune (411001)</Text>
-                    </View>
-                    
-                    {/* Languages */}
-                    <View className="flex-row items-center mb-3">
-                      <Ionicons name="chatbubbles" size={16} color="#718096" />
-                      <Text className="text-gray-700 ml-2">{formData.languages.join(', ')}</Text>
+                    {/* Profile Summary Card */}
+                    <View className="bg-gray-50 rounded-xl p-5 mb-6">
+                      <View className="flex-row items-center mb-4">
+                        <Ionicons name="person-outline" size={18} color="#04457E" />
+                        <Text className="text-[#04457E] text-lg font-bold ml-2">Profile Summary</Text>
+                      </View>
+                      
+                      {/* Name, Age and Gender */}
+                      <View className="flex-row items-center mb-3">
+                        <Ionicons name="person" size={16} color="#04457E" />
+                        <Text className="text-[#04457E] font-semibold ml-2">{formData.fullName}</Text>
+                        <Text className="text-gray-600 ml-2">• {formData.age} • {formData.gender}</Text>
+                      </View>
+                      
+                      {/* Location */}
+                      <View className="flex-row items-center mb-3">
+                        <Ionicons name="location" size={16} color="#e53e3e" />
+                        <Text className="text-gray-700 ml-2">Pune (411001)</Text>
+                      </View>
+                      
+                      {/* Languages */}
+                      <View className="flex-row items-center mb-3">
+                        <Ionicons name="chatbubbles" size={16} color="#718096" />
+                        <Text className="text-gray-700 ml-2">{formData.languages.join(', ')}</Text>
+                      </View>
+                      
+                      {/* Profession */}
+                      <View className="flex-row items-center">
+                        <FontAwesome5 name="briefcase" size={14} color="#8b5cf6" />
+                        <Text className="text-gray-700 ml-2">{formData.occupation || "Not specified"} • {formData.expYears || "0"} Years in Finance</Text>
+                      </View>
                     </View>
                     
-                    {/* Profession */}
-                    <View className="flex-row items-center">
-                      <FontAwesome5 name="briefcase" size={14} color="#8b5cf6" />
-                      <Text className="text-gray-700 ml-2">{formData.occupation || "Not specified"} • {formData.expYears || "0"} Years in Finance</Text>
-                    </View>
-                  </View>
-                  
-                  {/* Start Journey Button */}
-                  <TouchableOpacity 
-                    className="bg-[#18FFAA] py-4 rounded-xl mb-2 flex-row justify-center items-center shadow-sm"
-                    onPress={handleStartJourney}
-                  >
-                    <Ionicons name="rocket" size={20} color="#04457E" />
-                    <Text className="text-[#04457E] text-center font-bold ml-2 text-lg">Start My AI Journey</Text>
-                  </TouchableOpacity>
-                  
-                  {/* Go Back Button */}
-                  <TouchableOpacity 
-                    className="border border-gray-300 py-3 rounded-xl mb-4 flex-row justify-center items-center"
-                    onPress={() => setFormCompleted(false)}
-                  >
-                    <Ionicons name="arrow-back" size={18} color="#6b7280" />
-                    <Text className="text-gray-600 text-center font-medium ml-2">Go Back to Form</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          </ScrollView>
+                    {/* Start Journey Button */}
+                    <TouchableOpacity 
+                      className="bg-[#18FFAA] py-4 rounded-xl mb-2 flex-row justify-center items-center shadow-sm"
+                      onPress={handleStartJourney}
+                    >
+                      <Ionicons name="rocket" size={20} color="#04457E" />
+                      <Text className="text-[#04457E] text-center font-bold ml-2 text-lg">Start My AI Journey</Text>
+                    </TouchableOpacity>
+                    
+                    {/* Go Back Button */}
+                    <TouchableOpacity 
+                      className="border border-gray-300 py-3 rounded-xl mb-4 flex-row justify-center items-center"
+                      onPress={() => setFormCompleted(false)}
+                    >
+                      <Ionicons name="arrow-back" size={18} color="#6b7280" />
+                      <Text className="text-gray-600 text-center font-medium ml-2">Go Back to Form</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </ScrollView>
+            
+            {/* Fixed Bottom Button - Only for form steps */}
+            {!formCompleted && (
+              <Animated.View 
+                style={{
+                  transform: [{ translateY: keyboardAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -1]
+                  }) }],
+                  paddingBottom: isKeyboardVisible ? 10 : 20,
+                }}
+                className="px-6 bg-white border-t border-gray-100"
+              >
+                <TouchableOpacity 
+                  className="bg-[#04457E] py-4 rounded-xl mt-4 mb-3 shadow-sm"
+                  onPress={handleSubmit}
+                >
+                  <Text className="text-white text-center font-bold text-lg">
+                    {formStep === 1 ? 'Continue' : 'Submit'}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+            )}
+          </View>
         </TouchableOpacity>
       </KeyboardAvoidingView>
     </SafeAreaView>
