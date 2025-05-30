@@ -97,7 +97,7 @@ const CourseDetailsScreen = () => {
           </TouchableOpacity>
           <TouchableOpacity>
             <Image 
-              source={require('../../assets/images/react-logo.png')} 
+              source={require('../assets/images/react-logo.png')} 
               className="w-9 h-9 rounded-full border border-gray-300"
             />
           </TouchableOpacity>

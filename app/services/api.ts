@@ -1,5 +1,5 @@
 // services/api.ts
-const BASE_URL = 'http://172.20.10.11:9991/api/gp';
+const BASE_URL = 'http://192.168.76.89:5000/api/gp';
 export interface RegisterRequest {
   name: string;
   age: number;

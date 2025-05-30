@@ -45,7 +45,7 @@ const DailyGoalScreen: React.FC<DailyGoalScreenProps> = ({ navigation }) => {
       title: 'Selling Health Insurance with Empathy',
       description: 'Learn how to manage fear, build rapport fast, and understand emotional triggers.',
       completed: true,
-      image: require('../../assets/images/react-logo.png'),
+      image: require('../assets/images/react-logo.png'),
       steps: ['1', '2']
     },
     {
@@ -53,7 +53,7 @@ const DailyGoalScreen: React.FC<DailyGoalScreenProps> = ({ navigation }) => {
       title: 'Mastering Cold Calls: From Nervous to Natural',
       description: 'Understand what goes on in the mind of a potential lead during the first few seconds and how to respond effectively.',
       completed: false,
-      image: require('../../assets/images/react-logo.png'),
+      image: require('../assets/images/react-logo.png'),
       steps: ['3', '4']
     },
     {
@@ -61,7 +61,7 @@ const DailyGoalScreen: React.FC<DailyGoalScreenProps> = ({ navigation }) => {
       title: 'Advanced Negotiation Techniques',
       description: 'Learn to navigate complex pricing discussions and close more deals with confidence.',
       completed: false,
-      image: require('../../assets/images/react-logo.png'),
+      image: require('../assets/images/react-logo.png'),
       steps: ['5', '6']
     },
   ]);
@@ -242,7 +242,7 @@ const DailyGoalScreen: React.FC<DailyGoalScreenProps> = ({ navigation }) => {
           <View className="flex-row items-center pt-3">
             <View className="shadow-md rounded-full">
               <Image
-                source={require('../../assets/images/react-logo.png')}
+                source={require('../assets/images/react-logo.png')}
                 className="w-12 h-12 rounded-full border-2 border-white/20"
               />
             </View>
@@ -269,7 +269,7 @@ const DailyGoalScreen: React.FC<DailyGoalScreenProps> = ({ navigation }) => {
             <View className="flex-row">
               <View className="mr-4 items-center justify-center">
                 <Image 
-                  source={require('../../assets/images/react-logo.png')}
+                  source={require('../assets/images/react-logo.png')}
                   className="w-16 h-16 rounded-lg shadow-sm"
                 />
               </View>
@@ -429,19 +429,19 @@ const DailyGoalScreen: React.FC<DailyGoalScreenProps> = ({ navigation }) => {
                 id: 'rec1', 
                 title: 'Objection Handling Mastery', 
                 duration: '45 min',
-                image: require('../../assets/images/react-logo.png')
+                image: require('../assets/images/react-logo.png')
               },
               { 
                 id: 'rec2', 
                 title: 'Building Client Trust', 
                 duration: '30 min',
-                image: require('../../assets/images/react-logo.png') 
+                image: require('../assets/images/react-logo.png') 
               },
               { 
                 id: 'rec3', 
                 title: 'Effective Follow-up Techniques', 
                 duration: '20 min',
-                image: require('../../assets/images/react-logo.png') 
+                image: require('../assets/images/react-logo.png') 
               }
             ].map((item) => (
               <TouchableOpacity 

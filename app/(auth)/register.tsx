@@ -158,6 +158,8 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
       };
       
       const response = await apiService.register(registerData);
+
+      console.log("Register Response:", response);
       
       if (response.success && response.data) {
         // Store user data and token
