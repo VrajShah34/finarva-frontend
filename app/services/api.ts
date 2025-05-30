@@ -1,5 +1,5 @@
 // services/api.ts
-const SERVER_BASE = 'http://192.168.16.66:5000';
+const SERVER_BASE = 'http://192.168.76.89:5000';
 const API_PATHS = {
   GP: '/api/gp',
   LMS: '/api/lms',
@@ -101,6 +101,9 @@ export interface ModuleProgress {
   createdAt: string;
   updatedAt: string;
   last_accessed?: string;
+  feedback?: string;
+  score?: number;
+  completed_at?: string;
 }
 
 export interface CaseScenario {
@@ -135,6 +138,61 @@ export interface CourseStartResponse {
   success: boolean;
   message: string;
   course: Course;
+}
+
+// Add after existing interfaces
+export interface ModuleStartResponse {
+  success: boolean;
+  message: string;
+  progress: ModuleProgress;
+}
+
+export interface SubmitAnswerRequest {
+  answer: string;
+}
+
+export interface SubmitAnswerResponse {
+  message: string;
+  progress: ModuleProgress;
+  conversation_id: string;
+  initial_question: string;
+  language: string;
+}
+
+export interface ChatbotRequest {
+  answer: string;
+}
+
+export interface ChatbotResponse {
+  success: boolean;
+  message?: string;
+  bot_response?: string;
+  next_question?: string; // Add this field
+  conversation_id?: string;
+  is_completed?: boolean;
+  final_score?: number;
+  assessment?: string;
+  data?: {
+    bot_response?: string;
+    next_question?: string; // Add this field
+    conversation_id: string;
+    is_completed?: boolean;
+    final_score?: number;
+    assessment?: string;
+  };
+}
+
+// Add new interfaces for case study submission
+export interface CaseStudySubmissionRequest {
+  selected_option: string;
+}
+
+export interface CaseStudySubmissionResponse {
+  message: string;
+  progress: ModuleProgress;
+  conversation_id: string;
+  initial_question: string;
+  language: string;
 }
 
 class ApiService {
@@ -319,8 +377,50 @@ class ApiService {
       return `Status: ${response.status}, Response: ${text.substring(0, 100)}...`;
     } catch (error) {
       console.error('Endpoint test failed:', error);
-      return `Error: ${error.message}`;
+      return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
     }
+  }
+
+  // Add these methods after getModuleDetails
+  async startModule(moduleId: string): Promise<ApiResponse<ModuleStartResponse>> {
+    console.log('Starting module:', moduleId);
+    return this.makeRequest(API_PATHS.LMS, `/modules/${moduleId}/start`, {
+      method: 'POST',
+    }, true);
+  }
+
+  async submitAnswer(moduleId: string, answer: string): Promise<ApiResponse<SubmitAnswerResponse>> {
+    console.log('Submitting answer for module:', moduleId);
+    return this.makeRequest(API_PATHS.LMS, `/modules/${moduleId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ answer }),
+    }, true);
+  }
+
+  async submitChatbotResponse(conversationId: string, answer: string): Promise<ApiResponse<ChatbotResponse>> {
+    console.log('Submitting chatbot response for conversation:', conversationId);
+    return this.makeRequest(API_PATHS.LMS, `/chatbot/${conversationId}`, {
+      method: 'POST',
+      body: JSON.stringify({ answer }),
+    }, true);
+  }
+
+  // NEW: Case Study Submission Method
+  async submitCaseStudy(moduleId: string, selectedOption: string): Promise<ApiResponse<CaseStudySubmissionResponse>> {
+    console.log('Submitting case study for module:', moduleId, 'with option:', selectedOption);
+    return this.makeRequest(API_PATHS.LMS, `/module/${moduleId}/case-study`, {
+      method: 'POST',
+      body: JSON.stringify({ selected_option: selectedOption }),
+    }, true);
+  }
+
+  // Alternative method if the endpoint structure is different
+  async submitCaseStudyAlternative(moduleId: string, selectedOption: string): Promise<ApiResponse<CaseStudySubmissionResponse>> {
+    console.log('Submitting case study (alternative endpoint) for module:', moduleId);
+    return this.makeRequest(API_PATHS.LMS, `/modules/${moduleId}/case-study/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ selected_option: selectedOption }),
+    }, true);
   }
 }
 

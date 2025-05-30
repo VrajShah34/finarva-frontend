@@ -395,7 +395,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
           <View className="flex-row justify-center items-center py-6">
             <Text className="text-[#536B8E] text-base">Already have an account? </Text>
             <TouchableOpacity onPress={navigateToSignIn}>
-              <Text className="text-[#4CAF50] text-base font-bold">Sign In</Text>
+              <Text className="text-[#4CAF50] text-base font-bold pb-10">Sign In</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

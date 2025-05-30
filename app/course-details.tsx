@@ -168,16 +168,48 @@ const CourseDetailsScreen = () => {
   };
   
   // Navigate to specific module content
-  const navigateToModuleContent = (module: ModuleWithProgress, contentType: string) => {
-    // In a real app, you would navigate to the specific module content
-    router.push({
-      pathname: '/(app)/module-content',
-      params: {
-        moduleId: module.module_id,
-        contentType: contentType
+  // Update the navigateToModuleContent function
+const navigateToModuleContent = async (module: ModuleWithProgress, contentType: string) => {
+  // Start module if not started
+  if (module.progress?.status === 'not_started') {
+    try {
+      const response = await apiService.startModule(module.module_id);
+      if (response.success) {
+        // Refresh module data or update local state
+        console.log('Module started successfully');
       }
-    });
-  };
+    } catch (error) {
+      console.error('Error starting module:', error);
+    }
+  }
+
+  let pathname = '';
+  
+  switch (contentType) {
+    case 'content_viewed':
+      pathname = '/(module)/content-viewer';
+      break;
+    case 'video_watched':
+      pathname = '/(module)/video-player';
+      break;
+    case 'resources_accessed':
+      pathname = '/(module)/resources';
+      break;
+    case 'case_completed':
+      pathname = '/(module)/case-study';
+      break;
+    default:
+      pathname = '/(module)/content-viewer';
+  }
+
+  router.push({
+    pathname,
+    params: {
+      moduleId: module.module_id,
+      contentType: contentType
+    }
+  });
+};
   
   if (isLoading) {
     return (
@@ -265,23 +297,23 @@ const CourseDetailsScreen = () => {
               <TouchableOpacity 
                 className="bg-[#4DF0A9] px-6 py-3 rounded-full"
                 onPress={() => {
-                  // Find the first in-progress module
-                  const inProgressModule = courseDetails.modules.find(m => 
-                    m.progress && m.progress.status === 'in_progress'
-                  );
+                // Find the first in-progress module
+                const inProgressModule = courseDetails.modules.find(m => 
+                  m.progress && m.progress.status === 'in_progress'
+                );
+                
+                if (inProgressModule) {
+                  // Navigate to the appropriate content type
+                  const contentTypes = ['content_viewed', 'video_watched', 'resources_accessed', 'case_completed'];
                   
-                  if (inProgressModule) {
-                    // Navigate to the appropriate content type
-                    const contentTypes = ['content_viewed', 'video_watched', 'resources_accessed', 'case_completed'];
-                    
-                    // Find the first incomplete content type
-                    const nextContentType = contentTypes.find(type => 
-                      !isContentTypeCompleted(inProgressModule, type)
-                    ) || 'content_viewed';
-                    
-                    navigateToModuleContent(inProgressModule, nextContentType);
-                  }
-                }}
+                  // Find the first incomplete content type
+                  const nextContentType = contentTypes.find(type => 
+                    !isContentTypeCompleted(inProgressModule, type)
+                  ) || 'content_viewed';
+                  
+                  navigateToModuleContent(inProgressModule, nextContentType);
+                }
+              }}
               >
                 <Text className="text-[#1E4B88] font-bold">Continue</Text>
               </TouchableOpacity>
