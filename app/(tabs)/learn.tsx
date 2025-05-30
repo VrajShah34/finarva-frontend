@@ -309,7 +309,7 @@ const LearningScreen = () => {
         </View>
         
         {/* Weekly Activity */}
-        <View className="mb-8">
+        {/* <View className="mb-8">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-[#1E4B88] text-xl font-bold">Weekly Activity</Text>
             <Text className="text-gray-500 font-medium">8.5 hrs total</Text>
@@ -328,7 +328,7 @@ const LearningScreen = () => {
               </View>
             ))}
           </View>
-        </View>
+        </View> */}
         
         {/* Recommended Courses - Updated with API data */}
         <View className="mb-8">

@@ -1,16 +1,16 @@
 // app/(app)/module/content-viewer.tsx
 
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  SafeAreaView,
+  Platform,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
-  View,
-  Image,
+  View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { apiService, ModuleDetailsResponse } from '../services/api';
 
@@ -495,11 +495,19 @@ const ContentViewerScreen = () => {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+     <>
+          <StatusBar 
+            backgroundColor="white" 
+            barStyle="light-content" 
+            translucent={Platform.OS === 'android'}
+          />
+          <SafeAreaView 
+            edges={['right', 'left','top']}
+            style={{ flex: 1, backgroundColor: "white" }}
+          >
       
       {/* Header */}
-      <View className="px-4 py-3 flex-row justify-between items-center border-b border-gray-200">
+      <View className="px-4 py-3  flex-row justify-between items-center border-b border-gray-200">
         <View className="flex-row items-center">
           <TouchableOpacity 
             className="mr-3 p-1" 
@@ -514,13 +522,7 @@ const ContentViewerScreen = () => {
         
         <View className="flex-row items-center">
           <TouchableOpacity className="mr-4">
-            <Icon name="bookmark-outline" size={24} color="#6B7280" />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Image 
-              source={require('../../assets/images/react-logo.png')} 
-              className="w-9 h-9 rounded-full border border-gray-300"
-            />
+            <Icon name="bookmark-outline" size={24} color="#1E4B88" />
           </TouchableOpacity>
         </View>
       </View>
@@ -569,8 +571,8 @@ const ContentViewerScreen = () => {
         <View className="h-20" />
       </ScrollView>
 
-      {/* Bottom Navigation */}
-      <View className="px-4 py-4 border-t border-gray-200 bg-white">
+      {/* Bottom navigation */}
+      <View className="px-4 py-4 pb-6 border-t border-gray-200 bg-white">
         <View className="flex-row justify-between items-center">
           <TouchableOpacity 
             className={`px-4 py-2 rounded-lg ${currentSection === 1 ? 'bg-gray-100' : 'bg-gray-100'}`}
@@ -594,6 +596,7 @@ const ContentViewerScreen = () => {
         </View>
       </View>
     </SafeAreaView>
+    </>
   );
 };
 

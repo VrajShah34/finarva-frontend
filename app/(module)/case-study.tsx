@@ -1,15 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  SafeAreaView,
+  Alert,
+  Platform,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
-  View,
-  Image,
-  Alert,
+  View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { apiService, SubmitAnswerResponse } from '../services/api';
 import AIAssessmentModal from '../components/AIAssessmentModal';
@@ -130,9 +130,11 @@ const CaseStudyScreen = () => {
   }
 
   return (
+    <>
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
+      {/* Header */}
       <View className="px-4 py-3 flex-row justify-between items-center border-b border-gray-200">
         <View className="flex-row items-center">
           <TouchableOpacity className="mr-3 p-1" onPress={() => router.back()}>
@@ -333,6 +335,7 @@ const CaseStudyScreen = () => {
         onClose={handleAIAssessmentClose}
       />
     </SafeAreaView>
+    </>
   );
 };
 
