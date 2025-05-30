@@ -1,5 +1,3 @@
-// app/(app)/module/case-study.tsx
-
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import {
@@ -13,9 +11,8 @@ import {
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { dummyModuleData } from '../services/dummyData';
-import AIAssessmentModal from '../components/AIAssessmentModal';
 import { apiService, SubmitAnswerResponse } from '../services/api';
+import AIAssessmentModal from '../components/AIAssessmentModal';
 
 const CaseStudyScreen = () => {
   const { moduleId, contentType } = useLocalSearchParams();
@@ -23,12 +20,17 @@ const CaseStudyScreen = () => {
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showAIAssessment, setShowAIAssessment] = useState(false);
   const [confidence, setConfidence] = useState(3);
-  const [timeRemaining, setTimeRemaining] = useState(145); // 2:25 in seconds
+  const [timeRemaining, setTimeRemaining] = useState(145);
   const [moduleData, setModuleData] = useState<any>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [initialQuestion, setInitialQuestion] = useState<string | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [backendFeedback, setBackendFeedback] = useState<string | null>(null);
+  const [completionData, setCompletionData] = useState<{
+    feedback: string;
+    score: number | null;
+    assessment: string;
+  } | null>(null);
 
   const caseScenario = moduleData?.module?.case_scenario;
 
@@ -78,7 +80,6 @@ const CaseStudyScreen = () => {
           feedback: response.data.progress.feedback
         });
         
-        // Show AI assessment after delay
         setTimeout(() => {
           setShowAIAssessment(true);
         }, 2000);
@@ -102,20 +103,22 @@ const CaseStudyScreen = () => {
   };
 
   const getOptionLetter = (index: number) => {
-    return String.fromCharCode(65 + index); // A, B, C, D
+    return String.fromCharCode(65 + index);
   };
 
-  const handleAIAssessmentComplete = () => {
+  const handleAIAssessmentComplete = (data?: { feedback: string; score: number | null; assessment: string }) => {
     setShowAIAssessment(false);
-    // Reset conversation state
-    setConversationId(null);
-    setInitialQuestion(null);
-    router.back(); // Return to course details
+    if (data) {
+      setCompletionData(data);
+      // Auto-navigate back after 3 seconds
+      setTimeout(() => {
+        router.back();
+      }, 3000);
+    }
   };
 
   const handleAIAssessmentClose = () => {
     setShowAIAssessment(false);
-    // Keep conversation state in case user wants to reopen
   };
 
   if (!caseScenario) {
@@ -130,20 +133,13 @@ const CaseStudyScreen = () => {
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
-      {/* Header */}
       <View className="px-4 py-3 flex-row justify-between items-center border-b border-gray-200">
         <View className="flex-row items-center">
-          <TouchableOpacity 
-            className="mr-3 p-1" 
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity className="mr-3 p-1" onPress={() => router.back()}>
             <Icon name="arrow-left" size={24} color="#1E4B88" />
           </TouchableOpacity>
-          <Text className="text-[#1E4B88] text-xl font-bold">
-            Module Progress
-          </Text>
+          <Text className="text-[#1E4B88] text-xl font-bold">Module Progress</Text>
         </View>
-        
         <View className="flex-row items-center">
           <Text className="text-gray-600 text-sm mr-2">4 of 4</Text>
           <TouchableOpacity className="mr-4">
@@ -152,7 +148,6 @@ const CaseStudyScreen = () => {
         </View>
       </View>
 
-      {/* Navigation tabs */}
       <View className="flex-row border-b border-gray-200">
         <TouchableOpacity className="flex-1 py-3 items-center">
           <Text className="text-gray-500 font-medium">Overview</Text>
@@ -166,19 +161,10 @@ const CaseStudyScreen = () => {
       </View>
 
       <ScrollView className="flex-1">
-        {/* Case Scenario Header */}
         <View className="px-4 py-6 bg-gray-50">
-          <Text className="text-2xl font-bold text-gray-800 mb-4">
-            Case Scenario
-          </Text>
-          
-          {/* Patient info card */}
+          <Text className="text-2xl font-bold text-gray-800 mb-4">Case Scenario</Text>
           <View className="bg-white p-4 rounded-lg border border-gray-200">
-            <Text className="text-gray-700 text-base leading-relaxed">
-              {caseScenario.context}
-            </Text>
-            
-            {/* Additional details */}
+            <Text className="text-gray-700 text-base leading-relaxed">{caseScenario.context}</Text>
             <View className="mt-4 p-3 bg-blue-50 rounded-lg">
               <Text className="text-sm text-gray-700 mb-1">
                 <Text className="font-medium">Vitals:</Text> BP 165/95, HR 92, RR 18, O2 98%
@@ -193,13 +179,8 @@ const CaseStudyScreen = () => {
           </View>
         </View>
 
-        {/* Question */}
         <View className="px-4 py-4">
-          <Text className="text-lg font-bold text-gray-800 mb-6">
-            {caseScenario.question}
-          </Text>
-
-          {/* Options */}
+          <Text className="text-lg font-bold text-gray-800 mb-6">{caseScenario.question}</Text>
           <View className="space-y-3">
             {caseScenario.options.map((option, index) => {
               const isSelected = selectedOption === option;
@@ -210,13 +191,9 @@ const CaseStudyScreen = () => {
                 <TouchableOpacity
                   key={index}
                   className={`p-4 rounded-lg border-2 ${
-                    isCorrect 
-                      ? 'bg-green-50 border-green-500'
-                      : isWrong
-                      ? 'bg-red-50 border-red-500'
-                      : isSelected
-                      ? 'bg-blue-50 border-[#1E4B88]'
-                      : 'bg-white border-gray-200'
+                    isCorrect ? 'bg-green-50 border-green-500' :
+                    isWrong ? 'bg-red-50 border-red-500' :
+                    isSelected ? 'bg-blue-50 border-[#1E4B88]' : 'bg-white border-gray-200'
                   }`}
                   onPress={() => handleOptionSelect(option)}
                   disabled={hasSubmitted}
@@ -224,13 +201,9 @@ const CaseStudyScreen = () => {
                   <View className="flex-row items-start">
                     <View 
                       className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${
-                        isCorrect
-                          ? 'bg-green-500'
-                          : isWrong
-                          ? 'bg-red-500'
-                          : isSelected
-                          ? 'bg-[#1E4B88]'
-                          : 'bg-gray-200'
+                        isCorrect ? 'bg-green-500' :
+                        isWrong ? 'bg-red-500' :
+                        isSelected ? 'bg-[#1E4B88]' : 'bg-gray-200'
                       }`}
                     >
                       {hasSubmitted && isCorrect ? (
@@ -238,24 +211,16 @@ const CaseStudyScreen = () => {
                       ) : hasSubmitted && isWrong ? (
                         <Icon name="close" size={16} color="white" />
                       ) : (
-                        <Text 
-                          className={`font-bold ${
-                            isSelected ? 'text-white' : 'text-gray-600'
-                          }`}
-                        >
+                        <Text className={`font-bold ${isSelected ? 'text-white' : 'text-gray-600'}`}>
                           {getOptionLetter(index)}
                         </Text>
                       )}
                     </View>
                     <Text 
                       className={`flex-1 text-base ${
-                        isCorrect
-                          ? 'text-green-800'
-                          : isWrong
-                          ? 'text-red-800'
-                          : isSelected
-                          ? 'text-[#1E4B88]'
-                          : 'text-gray-700'
+                        isCorrect ? 'text-green-800' :
+                        isWrong ? 'text-red-800' :
+                        isSelected ? 'text-[#1E4B88]' : 'text-gray-700'
                       }`}
                     >
                       {option}
@@ -266,14 +231,11 @@ const CaseStudyScreen = () => {
             })}
           </View>
 
-          {/* Explanation (shown after submission) */}
-          {hasSubmitted && (backendFeedback || caseScenario?.rationale) && (
+          {hasSubmitted && (backendFeedback || caseScenario?.rationale) && !completionData && (
             <View className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
               <View className="flex-row items-start mb-2">
                 <Icon name="lightbulb-outline" size={20} color="#F59E0B" />
-                <Text className="text-lg font-bold text-gray-800 ml-2">
-                  Explanation
-                </Text>
+                <Text className="text-lg font-bold text-gray-800 ml-2">Explanation</Text>
               </View>
               <Text className="text-gray-700 text-base leading-relaxed">
                 {backendFeedback || caseScenario?.rationale}
@@ -281,7 +243,33 @@ const CaseStudyScreen = () => {
             </View>
           )}
 
-          {/* Question info */}
+          {completionData && (
+  <View className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+    <View className="flex-row items-center mb-2">
+      <Icon name="check-circle" size={24} color="#10B981" />
+      <Text className="text-lg font-bold text-gray-800 ml-2">Module Completed</Text>
+    </View>
+    <Text className="text-gray-700 text-base font-medium">
+      Congratulations, you have completed the module!
+    </Text>
+    {completionData.score !== null && (
+      <Text className="text-gray-700 text-base mt-2">
+        Your Score: {completionData.score}
+      </Text>
+    )}
+    {completionData.feedback && (
+      <Text className="text-gray-700 text-base mt-2">
+        Feedback: {completionData.feedback}
+      </Text>
+    )}
+    {completionData.assessment && (
+      <Text className="text-gray-700 text-base mt-2">
+        Assessment: {completionData.assessment}
+      </Text>
+    )}
+  </View>
+)}
+
           <View className="mt-6 flex-row justify-between items-center">
             <Text className="text-gray-500 text-sm">Question 1 of 1</Text>
             <View className="flex-row items-center">
@@ -294,11 +282,9 @@ const CaseStudyScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom section */}
       <View className="px-4 py-4 border-t border-gray-200 bg-white">
         {!hasSubmitted ? (
           <>
-            {/* Submit button */}
             <TouchableOpacity 
               className={`w-full py-4 rounded-lg items-center mb-4 ${
                 selectedOption && !submitLoading ? 'bg-[#1E4B88]' : 'bg-gray-300'
@@ -312,8 +298,6 @@ const CaseStudyScreen = () => {
                 {submitLoading ? 'Submitting...' : 'Submit Answer'}
               </Text>
             </TouchableOpacity>
-
-            {/* Confidence slider */}
             <View className="items-center">
               <Text className="text-gray-600 text-sm mb-2">Confidence</Text>
               <View className="flex-row items-center">
@@ -329,7 +313,7 @@ const CaseStudyScreen = () => {
               </View>
             </View>
           </>
-        ) : (
+        ) : !completionData && (
           <TouchableOpacity 
             className="w-full bg-[#4DF0A9] py-4 rounded-lg items-center"
             onPress={() => setShowAIAssessment(true)}
@@ -341,7 +325,6 @@ const CaseStudyScreen = () => {
         )}
       </View>
 
-      {/* AI Assessment Modal */}
       <AIAssessmentModal
         visible={showAIAssessment}
         conversationId={conversationId}

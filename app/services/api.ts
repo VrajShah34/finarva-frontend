@@ -167,21 +167,55 @@ export interface ChatbotResponse {
   success: boolean;
   message?: string;
   bot_response?: string;
-  next_question?: string; // Add this field
+  next_question?: string;
   conversation_id?: string;
   is_completed?: boolean;
   final_score?: number;
   assessment?: string;
-  data?: {
-    bot_response?: string;
-    next_question?: string; // Add this field
+  feedback?: string;
+  current_score?: number;
+  evaluation?: string;
+  interaction_count?: number;
+  interaction?: {
+    _id: string;
+    learner_id: string;
+    module_id: string;
     conversation_id: string;
-    is_completed?: boolean;
-    final_score?: number;
-    assessment?: string;
+    messages: string[];
+    timestamp: string;
+    createdAt: string;
+    updatedAt: string;
+    feedback_score?: number;
+    evaluation_history?: Array<{
+      response: string;
+      evaluation: string;
+      score: number;
+      timestamp: string;
+    }>;
+    status?: string;
+    final_evaluation?: {
+      average_comprehension: number;
+      total_interactions: number;
+      completion_date: string;
+      overall_assessment: string;
+    };
   };
+  progress?: {
+    _id: string;
+    learner_id: string;
+    module_id: string;
+    status: string;
+    progress_percentage: number;
+    completed_sections: string[];
+    createdAt: string;
+    updatedAt: string;
+    last_accessed?: string;
+    feedback?: string;
+    score?: number;
+    completed_at?: string;
+  };
+  language?: string;
 }
-
 // Add new interfaces for case study submission
 export interface CaseStudySubmissionRequest {
   selected_option: string;

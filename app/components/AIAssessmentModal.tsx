@@ -19,7 +19,7 @@ interface AIAssessmentModalProps {
   visible: boolean;
   conversationId: string | null;
   initialQuestion: string | null;
-  onComplete: () => void;
+  onComplete: (completionData?: { feedback: string; score: number | null; assessment: string }) => void;
   onClose: () => void;
 }
 
@@ -153,15 +153,11 @@ const handleSendResponse = async () => {
   console.log("conversationId:", conversationId);
   console.log("response:", currentResponse);
   
-  // Add user message to conversation immediately
   const userMessage: ConversationMessage = {
     id: `user_${Date.now()}`,
     type: 'user',
     text: currentResponse,
-    timestamp: new Date().toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    })
+    timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
   };
   
   setConversation(prev => {
@@ -183,87 +179,94 @@ const handleSendResponse = async () => {
     console.log("response data:", JSON.stringify(response.data, null, 2));
     
     if (response.success && response.data) {
-      const { bot_response, next_question, is_completed, final_score, assessment } = response.data;
+      const { 
+        bot_response, 
+        next_question, 
+        is_completed, 
+        final_score, 
+        assessment, 
+        feedback, 
+        current_score, 
+        progress,
+        message,
+        evaluation,
+        interaction_count 
+      } = response.data;
       
       console.log("Bot response:", bot_response);
       console.log("Next question:", next_question);
       console.log("Is completed:", is_completed);
+      console.log("Final score:", final_score);
+      console.log("Assessment:", assessment);
+      console.log("Feedback (top-level):", feedback);
+      console.log("Current score:", current_score);
+      console.log("Progress feedback:", progress?.feedback);
+      console.log("Progress status:", progress?.status);
+      console.log("Evaluation:", evaluation);
+      console.log("Interaction count:", interaction_count);
       
-      // Add AI response to conversation if we have bot_response or next_question
       if (bot_response || next_question) {
         const aiMessage: ConversationMessage = {
           id: `ai_${Date.now()}`,
           type: 'ai',
-          text: bot_response || next_question || '', // Use next_question if bot_response is not present
-          timestamp: new Date().toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })
+          text: bot_response || next_question || '',
+          timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
         };
-        
         setConversation(prev => {
           console.log("Adding AI message to conversation");
           return [...prev, aiMessage];
         });
       }
       
-      // Check if assessment is completed
-      if (is_completed) {
-        console.log("Assessment completed!");
+      const totalResponses = getTotalResponses();
+      console.log("Total user responses:", totalResponses);
+      
+      const isModuleCompleted = progress?.status === "completed" || totalResponses >= 3 || is_completed || interaction_count >= 3;
+      
+      if (isModuleCompleted) {
+        console.log("Completing assessment");
         setIsCompleted(true);
         
-        // Add completion message if we have final score or assessment
-        let completionText = "Great job! You've completed the assessment.";
-        if (final_score !== undefined) {
-          completionText += ` Your final score: ${final_score}`;
-        }
-        if (assessment) {
-          completionText += ` Assessment: ${assessment}`;
-        }
+        const completionFeedback = progress?.feedback || feedback || message || "No feedback provided.";
+        const score = final_score !== undefined ? final_score : (current_score !== undefined ? current_score : null);
         
-        const completionMessage: ConversationMessage = {
-          id: `completion_${Date.now()}`,
-          type: 'ai',
-          text: completionText,
-          timestamp: new Date().toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })
+        const completionData = {
+          feedback: completionFeedback,
+          score,
+          assessment: assessment || "No assessment provided."
         };
         
-        setConversation(prev => [...prev, completionMessage]);
-        
-        // Auto-complete after showing completion message
         setTimeout(() => {
-          console.log("Auto-completing assessment");
-          onComplete();
-        }, 3000);
+          console.log("Closing modal and passing completion data");
+          onComplete(completionData);
+        }, 1000);
+      } else if (!bot_response && !next_question && !isModuleCompleted) {
+        console.warn("No bot_response or next_question received");
+        const warningMessage: ConversationMessage = {
+          id: `warning_${Date.now()}`,
+          type: 'ai',
+          text: 'No further questions received. Please try submitting again or contact support.',
+          timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        };
+        setConversation(prev => [...prev, warningMessage]);
       }
     } else {
       console.error("API Error:", response.error || response.message);
-      
       const errorMessage: ConversationMessage = {
         id: `error_${Date.now()}`,
         type: 'ai',
         text: response.error || response.message || 'Sorry, there was an error processing your response. Please try again.',
-        timestamp: new Date().toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        })
+        timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
       };
       setConversation(prev => [...prev, errorMessage]);
     }
   } catch (error) {
     console.error('=== Network Error ===', error);
-    
     const errorMessage: ConversationMessage = {
       id: `error_${Date.now()}`,
       type: 'ai',
       text: 'Sorry, there was a network error. Please check your connection and try again.',
-      timestamp: new Date().toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      })
+      timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     };
     setConversation(prev => [...prev, errorMessage]);
   } finally {
@@ -524,7 +527,7 @@ const handleSendResponse = async () => {
             <View className="px-4 py-4 border-t border-gray-200">
               <TouchableOpacity
                 className="w-full bg-[#4DF0A9] py-4 rounded-lg items-center"
-                onPress={onComplete}
+                onPress={() => onComplete()}
               >
                 <Text className="text-[#1E4B88] font-bold text-lg">
                   Complete Assessment
