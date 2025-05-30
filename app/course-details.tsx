@@ -4,14 +4,14 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Platform,
+  Image,
+  SafeAreaView,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   apiService,
@@ -19,8 +19,6 @@ import {
   Module,
   ModuleProgress
 } from './services/api';
-
-const primaryColor = "#04457E";
 
 interface ModuleWithProgress extends Module {
   progress: ModuleProgress;
@@ -170,48 +168,34 @@ const CourseDetailsScreen = () => {
   };
   
   // Navigate to specific module content
-  // Update the navigateToModuleContent function
-const navigateToModuleContent = async (module: ModuleWithProgress, contentType: string) => {
-  // Start module if not started
-  if (module.progress?.status === 'not_started') {
-    try {
-      const response = await apiService.startModule(module.module_id);
-      if (response.success) {
-        // Refresh module data or update local state
-        console.log('Module started successfully');
+  const navigateToModuleContent = (module: ModuleWithProgress, contentType: string) => {
+      let pathname = '';
+      
+      switch (contentType) {
+        case 'content_viewed':
+          pathname = '/(module)/content-viewer';
+          break;
+        case 'video_watched':
+          pathname = '/(module)/video-player';
+          break;
+        case 'resources_accessed':
+          pathname = '/(module)/resources';
+          break;
+        case 'case_completed':
+          pathname = '/(module)/case-study';
+          break;
+        default:
+          pathname = '/(module)/content-viewer';
       }
-    } catch (error) {
-      console.error('Error starting module:', error);
-    }
-  }
 
-  let pathname = '';
-  
-  switch (contentType) {
-    case 'content_viewed':
-      pathname = '/(module)/content-viewer';
-      break;
-    case 'video_watched':
-      pathname = '/(module)/video-player';
-      break;
-    case 'resources_accessed':
-      pathname = '/(module)/resources';
-      break;
-    case 'case_completed':
-      pathname = '/(module)/case-study';
-      break;
-    default:
-      pathname = '/(module)/content-viewer';
-  }
-
-  router.push({
-    pathname,
-    params: {
-      moduleId: module.module_id,
-      contentType: contentType
-    }
-  });
-};
+      router.push({
+        pathname,
+        params: {
+          moduleId: module.module_id,
+          contentType: contentType
+        }
+      });
+    };
   
   if (isLoading) {
     return (
@@ -238,16 +222,8 @@ const navigateToModuleContent = async (module: ModuleWithProgress, contentType: 
   }
   
   return (
-    <>
-          <StatusBar 
-            backgroundColor={primaryColor} 
-            barStyle="light-content" 
-            translucent={Platform.OS === 'android'}
-          />
-          <SafeAreaView 
-            edges={['right', 'left','top']}
-            style={{ flex: 1, backgroundColor: primaryColor }}
-          >
+    <SafeAreaView className="flex-1 bg-white">
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       {/* Header */}
       <View className="px-4 py-3 flex-row justify-between items-center border-b border-gray-200">
@@ -256,18 +232,30 @@ const navigateToModuleContent = async (module: ModuleWithProgress, contentType: 
             className="mr-3 p-1" 
             onPress={() => router.back()}
           >
-            <Icon name="arrow-left" size={24} color="white" />
+            <Icon name="arrow-left" size={24} color="#1E4B88" />
           </TouchableOpacity>
-          <Text className="text-white text-xl font-bold">
-            Gromo<Text className="text-white">+</Text>
+          <Text className="text-[#1E4B88] text-xl font-bold">
+            Gromo<Text className="text-green-500">+</Text>
           </Text>
         </View>
         
-        
+        <View className="flex-row items-center">
+          <TouchableOpacity className="mr-4">
+            <Icon name="bookmark-outline" size={24} color="#1E4B88" />
+          </TouchableOpacity>
+          <TouchableOpacity className="mr-4">
+            <Icon name="share-variant-outline" size={24} color="#1E4B88" />
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Image 
+              source={require('../assets/images/react-logo.png')} 
+              className="w-9 h-9 rounded-full border border-gray-300"
+            />
+          </TouchableOpacity>
+        </View>
       </View>
       
-      <View className='flex-1 bg-gray-50'>
-      <ScrollView className="flex-1 ">
+      <ScrollView className="flex-1">
         {/* Course Title and Description */}
         <View className="px-5 pt-6 pb-4">
           <Text className="text-[#1E4B88] text-3xl font-bold mb-2">{courseDetails.title}</Text>
@@ -606,9 +594,7 @@ const navigateToModuleContent = async (module: ModuleWithProgress, contentType: 
         
         <View className="h-10" />
       </ScrollView>
-      </View>
     </SafeAreaView>
-    </>
   );
 };
 
