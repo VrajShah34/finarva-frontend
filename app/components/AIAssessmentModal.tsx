@@ -221,7 +221,7 @@ const handleSendResponse = async () => {
       const totalResponses = getTotalResponses();
       console.log("Total user responses:", totalResponses);
       
-      const isModuleCompleted = progress?.status === "completed" || totalResponses >= 3 || is_completed || interaction_count >= 3;
+      const isModuleCompleted = progress?.status === "completed" || totalResponses >= 3 || is_completed || (interaction_count ?? 0) >= 3;
       
       if (isModuleCompleted) {
         console.log("Completing assessment");

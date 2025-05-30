@@ -121,7 +121,8 @@ export interface Module {
   category: string;
   estimated_time_min: number;
   generated_summary: string;
-  content: string;
+  content: StructuredContent | string; // Support both new and legacy format
+  original_content?: string; // Fallback for legacy content
   video_url?: string;
   external_resources?: string[];
   case_scenario?: CaseScenario;
@@ -248,6 +249,20 @@ export interface ChatbotResponse {
 // Add new interfaces for case study submission
 export interface CaseStudySubmissionRequest {
   selected_option: string;
+}
+
+export interface ContentSection {
+  title: string;
+  content: string;
+  icon: string;
+  estimatedTime: number;
+}
+
+export interface StructuredContent {
+  introduction: ContentSection;
+  keyConcepts: ContentSection;
+  practicalExamples: ContentSection;
+  risksAndProcess: ContentSection;
 }
 
 export interface CaseStudySubmissionResponse {
@@ -523,3 +538,44 @@ async getLeads(): Promise<ApiResponse<any>> {
 }
 
 export const apiService = new ApiService();
+
+export const isStructuredContent = (content: any): content is StructuredContent => {
+  return content && 
+         typeof content === 'object' && 
+         content.introduction && 
+         content.keyConcepts && 
+         content.practicalExamples && 
+         content.risksAndProcess;
+};
+
+// Helper function to convert legacy content to structured format
+export const convertToStructuredContent = (legacyContent: string, title: string): StructuredContent => {
+  const sections = legacyContent.split('\n\n');
+  
+  return {
+    introduction: {
+      title: "Introduction & Overview",
+      content: `# Introduction\n\n${title}\n\n${sections[0] || 'Welcome to this comprehensive learning module.'}`,
+      icon: "book-open-page-variant",
+      estimatedTime: 5
+    },
+    keyConcepts: {
+      title: "Key Concepts",
+      content: `## Core Concepts\n\n${sections[1] || 'Key learning concepts will be covered in this section.'}`,
+      icon: "lightbulb-outline", 
+      estimatedTime: 7
+    },
+    practicalExamples: {
+      title: "Practical Examples",
+      content: `## Real-World Applications\n\n${sections[2] || 'Practical examples and real-world scenarios.'}`,
+      icon: "chart-line",
+      estimatedTime: 5
+    },
+    risksAndProcess: {
+      title: "Risks & Process", 
+      content: `## Implementation Guide\n\n${sections[3] || 'Step-by-step process and risk considerations.'}`,
+      icon: "shield-check",
+      estimatedTime: 3
+    }
+  };
+};
