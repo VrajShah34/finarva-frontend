@@ -1,23 +1,23 @@
 // screens/auth/RegisterScreen.tsx
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { apiService, RegisterRequest } from '../services/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type RootStackParamList = {
   SignIn: undefined;
@@ -392,10 +392,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
           </View>
           
           {/* Sign In Link */}
-          <View className="flex-row justify-center items-center py-6">
+          <View className="flex-row justify-center items-center pb-16">
             <Text className="text-[#536B8E] text-base">Already have an account? </Text>
             <TouchableOpacity onPress={navigateToSignIn}>
-              <Text className="text-[#4CAF50] text-base font-bold pb-10">Sign In</Text>
+              <Text className="text-[#4CAF50] text-base font-bold ">Sign In</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

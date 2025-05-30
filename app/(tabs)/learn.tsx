@@ -2,21 +2,25 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
-  SafeAreaView,
+  Platform,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { apiService, Course } from '../services/api';
+import { apiService, Course, UserProfile } from '../services/api';
+
+const primaryColor = "#04457E";
 
 const LearningScreen = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   // Mock data for weekly activity
   const weeklyActivity = [
@@ -28,6 +32,28 @@ const LearningScreen = () => {
     { day: 'Sat', hours: 1.0 },
     { day: 'Sun', hours: 0 },
   ];
+  
+  // Fetch user profile
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setProfileLoading(true);
+        const response = await apiService.getProfile();
+        
+        if (response.success && response.data) {
+          setProfile(response.data.gp);
+        } else {
+          console.error('Failed to fetch profile:', response.error);
+        }
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
   
   // Fetch courses from API
   useEffect(() => {
@@ -57,17 +83,17 @@ const LearningScreen = () => {
 
   // Update the navigation function to pass the courseId
   const navigateToCourseDetails = (courseId?: string) => {
-  if (!courseId) {
-    console.warn('No course ID provided for navigation');
-    return;
+    if (!courseId) {
+      console.warn('No course ID provided for navigation');
+      return;
+    }
+    
+    console.log('Navigating to course:', courseId);
+    router.push({
+      pathname: '/course-details',
+      params: { courseId }
+    });
   }
-  
-  console.log('Navigating to course:', courseId);
-  router.push({
-    pathname: '/course-details',
-    params: { courseId }
-  });
-}
 
   // Get course level label
   const getCourseLevel = (percentage: number) => {
@@ -85,112 +111,171 @@ const LearningScreen = () => {
       default: return 'Explore';
     }
   }
+  
+  // Format user's first name for greeting
+  const getUserFirstName = (): string => {
+    if (!profile || !profile.name) return 'Learner';
+    const names = profile.name.trim().split(' ');
+    return names[0];
+  }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <>
+    <StatusBar 
+            backgroundColor={primaryColor} 
+            barStyle="light-content" 
+            translucent={Platform.OS === 'android'}
+          />
+          <SafeAreaView 
+            edges={['right', 'left','top']}
+            style={{ flex: 1, backgroundColor: primaryColor }}
+          >
       
       {/* Header */}
-      <View className="bg-white px-5 py-4 flex-row justify-between items-center border-b border-gray-200">
-        <Text className="text-[#1E4B88] text-2xl font-bold">
-          Gromo<Text className="text-green-500">+</Text>
-        </Text>
-        <View className="flex-row items-center">
-          <TouchableOpacity className="mr-4">
-            <Icon name="bell-outline" size={24} color="#1E4B88" />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Image 
-              source={require('../../assets/images/react-logo.png')} 
-              className="w-9 h-9 rounded-full border border-gray-300"
-            />
-          </TouchableOpacity>
+      <View style={{ backgroundColor: primaryColor }} className="py-5 px-4 flex-row justify-between items-center">
+          <View className="flex-row items-center">
+            
+            <Text className="text-white text-2xl font-bold">Learn</Text>
+          </View>
+          
         </View>
-      </View>
-      
+      <View className='flex-1 bg-gray-50'>
       <ScrollView className="flex-1 px-5">
         {/* Greeting */}
         <View className="mt-6 mb-2">
-          <Text className="text-[#1E4B88] text-2xl font-bold">Hello, Sarah!</Text>
+          <Text className="text-[#1E4B88] text-2xl font-bold">
+            Hello, {profileLoading ? '...' : getUserFirstName()}!
+          </Text>
           <Text className="text-gray-500 text-base mt-1">Continue your learning journey</Text>
         </View>
         
         {/* Active Course Card */}
-        <View className="bg-white rounded-2xl p-5 shadow-sm my-4">
-          <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-[#1E4B88] text-sm font-medium">ACTIVE COURSE</Text>
-            <Text className="text-[#1E4B88] font-bold text-base">65% Complete</Text>
-          </View>
-          
-          <Text className="text-gray-800 text-2xl font-bold mb-4">Spanish for Beginners</Text>
+        {/* Active Course Card */}
+{isLoading ? (
+  <View className="bg-white rounded-2xl p-5 shadow-sm my-4 items-center justify-center" style={{ minHeight: 250 }}>
+    <ActivityIndicator size="large" color="#1E4B88" />
+    <Text className="mt-4 text-gray-500">Loading your courses...</Text>
+  </View>
+) : error ? (
+  <View className="bg-white rounded-2xl p-5 shadow-sm my-4 items-center justify-center" style={{ minHeight: 200 }}>
+    <Icon name="alert-circle-outline" size={36} color="#FF6B6B" />
+    <Text className="mt-2 text-gray-700 text-center">Couldn't load your active course</Text>
+    <TouchableOpacity 
+      className="mt-4 bg-[#1E4B88] px-4 py-2 rounded-lg"
+      onPress={() => setIsLoading(true)}
+    >
+      <Text className="text-white font-medium">Retry</Text>
+    </TouchableOpacity>
+  </View>
+) : courses.length > 0 ? (
+  <View className="bg-white rounded-2xl p-5 shadow-sm my-4">
+    <View className="flex-row justify-between items-center mb-2">
+      <Text className="text-[#1E4B88] text-sm font-medium">ACTIVE COURSE</Text>
+      {/* Get the active course or first course */}
+      {(() => {
+        const activeCourse = courses.find(c => c.status === 'in_progress') || courses[0];
+        return (
+          <Text className="text-[#1E4B88] font-bold text-base">
+            {activeCourse.progress_percentage}% Complete
+          </Text>
+        );
+      })()}
+    </View>
+    
+    {/* Dynamic course title */}
+    {(() => {
+      const activeCourse = courses.find(c => c.status === 'in_progress') || courses[0];
+      return (
+        <>
+          <Text className="text-gray-800 text-2xl font-bold mb-4">
+            {activeCourse.title}
+          </Text>
           
           {/* Progress Bar */}
           <View className="h-2 w-full bg-gray-200 rounded-full mb-4">
-            <View className="h-2 bg-gradient-to-r from-[#1E4B88] to-[#4DF0A9] rounded-full" style={{ width: '65%' }} />
+            <View 
+              className="h-2 bg-gradient-to-r from-[#1E4B88] to-[#4DF0A9] rounded-full" 
+              style={{ width: `${activeCourse.progress_percentage}%` }} 
+            />
           </View>
           
           <View className="mb-6">
             <View className="flex-row">
-              <Text className="text-gray-600">Current module: </Text>
-              <Text className="text-[#1E4B88] font-medium">Basic Conversations</Text>
+              <Text className="text-gray-600">Course topic: </Text>
+              <Text className="text-[#1E4B88] font-medium">{activeCourse.topic}</Text>
             </View>
-            <Text className="text-gray-500 mt-1">Estimated time: 15 minutes remaining</Text>
+            <Text className="text-gray-500 mt-1">
+              {activeCourse.module_ids?.length || 0} modules total
+            </Text>
           </View>
-          
-          {/* Module Icons */}
-          <View className="flex-row justify-around mb-6">
-            <View className="items-center">
-              <View className="w-14 h-14 rounded-full bg-[#1E4B88] items-center justify-center mb-2">
-                <Icon name="headphones" size={24} color="white" />
-              </View>
-              <Text className="text-[#1E4B88] text-xs font-medium text-center">Text + Voice</Text>
-              <Text className="text-xs text-gray-500">Completed</Text>
-            </View>
-            
-            <View className="items-center">
-              <View className="w-14 h-14 rounded-full bg-[#1E4B88] items-center justify-center mb-2">
-                <Icon name="video" size={24} color="white" />
-              </View>
-              <Text className="text-[#1E4B88] text-xs font-medium text-center">Videos</Text>
-              <Text className="text-xs text-gray-500">Completed</Text>
-            </View>
-            
-            <View className="items-center">
-              <View className="w-14 h-14 rounded-full bg-gray-200 items-center justify-center mb-2">
-                <Icon name="link-variant" size={24} color="#64748B" />
-              </View>
-              <Text className="text-[#1E4B88] text-xs font-medium text-center">Resources</Text>
-              <Text className="text-xs text-gray-500">In Progress</Text>
-            </View>
-            
-            <View className="items-center">
-              <View className="w-14 h-14 rounded-full bg-gray-200 items-center justify-center mb-2">
-                <Icon name="notebook" size={24} color="#64748B" />
-              </View>
-              <Text className="text-[#1E4B88] text-xs font-medium text-center">Case Study</Text>
-              <Text className="text-xs text-gray-500">Locked</Text>
-            </View>
-          </View>
-          
-          {/* Continue Button */}
-          <TouchableOpacity 
-  className="bg-[#1E4B88] py-4 rounded-lg items-center"
-  onPress={() => {
-    // Find an in-progress course or use the first course
-    const activeCourse = courses.find(c => c.status === 'in_progress');
-    if (activeCourse) {
-      navigateToCourseDetails(activeCourse.course_id);
-    } else if (courses.length > 0) {
-      navigateToCourseDetails(courses[0].course_id);
-    }
-  }}
->
-  <View className="flex-row items-center">
-    <Icon name="play" size={18} color="white" />
-    <Text className="text-white font-bold text-lg ml-2">Continue Learning</Text>
-  </View>
-</TouchableOpacity>
+        </>
+      );
+    })()}
+    
+    {/* Module Icons - These would ideally be based on module completion data */}
+    <View className="flex-row justify-around mb-6">
+      <View className="items-center">
+        <View className="w-14 h-14 rounded-full bg-[#1E4B88] items-center justify-center mb-2">
+          <Icon name="headphones" size={24} color="white" />
         </View>
+        <Text className="text-[#1E4B88] text-xs font-medium text-center">Text + Voice</Text>
+        <Text className="text-xs text-gray-500">Completed</Text>
+      </View>
+      
+      <View className="items-center">
+        <View className="w-14 h-14 rounded-full bg-[#1E4B88] items-center justify-center mb-2">
+          <Icon name="video" size={24} color="white" />
+        </View>
+        <Text className="text-[#1E4B88] text-xs font-medium text-center">Videos</Text>
+        <Text className="text-xs text-gray-500">Completed</Text>
+      </View>
+      
+      <View className="items-center">
+        <View className="w-14 h-14 rounded-full bg-gray-200 items-center justify-center mb-2">
+          <Icon name="link-variant" size={24} color="#64748B" />
+        </View>
+        <Text className="text-[#1E4B88] text-xs font-medium text-center">Resources</Text>
+        <Text className="text-xs text-gray-500">In Progress</Text>
+      </View>
+      
+      <View className="items-center">
+        <View className="w-14 h-14 rounded-full bg-gray-200 items-center justify-center mb-2">
+          <Icon name="notebook" size={24} color="#64748B" />
+        </View>
+        <Text className="text-[#1E4B88] text-xs font-medium text-center">Case Study</Text>
+        <Text className="text-xs text-gray-500">Locked</Text>
+      </View>
+    </View>
+    
+    {/* Continue Button */}
+    <TouchableOpacity 
+      className="bg-[#1E4B88] py-4 rounded-lg items-center"
+      onPress={() => {
+        // Find an in-progress course or use the first course
+        const activeCourse = courses.find(c => c.status === 'in_progress') || courses[0];
+        if (activeCourse) {
+          navigateToCourseDetails(activeCourse.course_id);
+        }
+      }}
+    >
+      <View className="flex-row items-center">
+        <Icon name="play" size={18} color="white" />
+        <Text className="text-white font-bold text-lg ml-2">Continue Learning</Text>
+      </View>
+    </TouchableOpacity>
+  </View>
+) : (
+  <View className="bg-white rounded-2xl p-5 shadow-sm my-4 items-center justify-center" style={{ minHeight: 200 }}>
+    <Icon name="book-outline" size={40} color="#1E4B88" />
+    <Text className="mt-4 text-gray-700 text-center">No active courses yet</Text>
+    <TouchableOpacity 
+      className="mt-4 bg-[#1E4B88] px-4 py-2 rounded-lg"
+      onPress={() => {/* Navigate to course catalog */}}
+    >
+      <Text className="text-white font-medium">Find a Course</Text>
+    </TouchableOpacity>
+  </View>
+)}
         
         {/* Progress Section */}
         <View className="mt-2 mb-6">
@@ -325,8 +410,19 @@ const LearningScreen = () => {
           )}
         </View>
       </ScrollView>
+      </View>
     </SafeAreaView>
+    </>
   );
+};
+
+// Helper function to generate avatar initials (copied from profile page)
+const getInitials = (name: string): string => {
+  if (!name) return 'GP';
+  const names = name.trim().split(' ');
+  return names.length === 1 
+    ? names[0].slice(0, 2).toUpperCase()
+    : (names[0][0] + names[names.length - 1][0]).toUpperCase();
 };
 
 export default LearningScreen;

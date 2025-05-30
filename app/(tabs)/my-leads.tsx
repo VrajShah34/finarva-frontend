@@ -3,22 +3,26 @@ import * as Contacts from 'expo-contacts';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    FlatList,
-    Linking,
-    Modal,
-    Platform,
-    SafeAreaView as RNSafeAreaView,
-    ScrollView,
-    StatusBar,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  FlatList,
+  Linking,
+  Modal,
+  Platform,
+  SafeAreaView as RNSafeAreaView,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  apiService
+} from '../services/api';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -47,30 +51,52 @@ type AICallData = {
   notes: string;
 };
 
-// Updated CustomerLead type to align status and leadType
+// Updated CustomerLead type to match backend response
 type CustomerLead = {
-  id: number;
-  name: string;
-  phone?: string;
-  email?: string;
-  productType: string;
-  status: 'new' | 'active' | 'needs_renewal' | 'converted' | 'ai_processing'; // Aligned with leadType
-  leadType: 'new' | 'active' | 'ai_processing'; // Simplified to match status where possible
-  needsRenewal: boolean;
-  upsellPotential: boolean;
+  id: string;
+  _id: string;
+  contact: {
+    name: string;
+    phone: string;
+    email?: string;
+    age?: number;
+    region?: string;
+    preferred_language?: string;
+  };
+  interest: {
+    products: string[];
+    interest_level: 'low' | 'medium' | 'high';
+    budget_range?: string;
+    urgency_level: string;
+  };
+  status: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  referrer_gp_id: string;
+  referrer?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  // Frontend display properties
+  leadType?: 'new' | 'active' | 'ai_processing';
+  needsRenewal?: boolean;
+  upsellPotential?: boolean;
   policyEndDate?: string;
   lastContact?: string;
-  dateAdded: string;
   aiCallData?: AICallData;
-  activities: {
+  activities?: {
     description: string;
     date: string;
     icon: string;
     type: 'call' | 'message' | 'email' | 'note' | 'ai_call';
   }[];
   aiSuggestion?: string;
-  tags: string[];
+  tags?: string[];
   interestScore?: number;
+  productType?: string;
+  dateAdded?: string;
 };
 
 const getLeadTypeColor = (type: 'new' | 'active' | 'ai_processing') => {
@@ -78,6 +104,8 @@ const getLeadTypeColor = (type: 'new' | 'active' | 'ai_processing') => {
   if (type === 'ai_processing') return '#E0E7FF';
   return '#E5F3FF';
 };
+
+
 
 const getLeadTextColor = (type: 'new' | 'active' | 'ai_processing', primaryColor: string = '#04457E'): string => {
   switch (type) {
@@ -90,6 +118,74 @@ const getLeadTextColor = (type: 'new' | 'active' | 'ai_processing', primaryColor
     default:
       return primaryColor; // Fallback for unexpected cases
   }
+};
+
+// Function to determine the leadType based on status (case-insensitive)
+const determineLeadType = (status: string): 'new' | 'active' | 'ai_processing' => {
+  const statusLower = status.toLowerCase();
+  switch (statusLower) {
+    case 'new':
+      return 'new';
+    case 'ai_processing':
+      return 'ai_processing';
+    default:
+      return 'active';
+  }
+};
+
+// Function to format a lead from API to display format
+const formatLeadForDisplay = (lead: any): CustomerLead => {
+  const leadType = determineLeadType(lead.status);
+  
+  // Determine interest score based on interest_level
+  let interestScore;
+  if (lead.interest?.interest_level === 'high') {
+    interestScore = 8;
+  } else if (lead.interest?.interest_level === 'medium') {
+    interestScore = 6;
+  } else if (lead.interest?.interest_level === 'low') {
+    interestScore = 4;
+  }
+
+  // Format product types for display
+  const productType = lead.interest?.products?.map((product: string) => {
+    const formatted = product.replace('_', ' ');
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }).join(', ') || 'Not Specified';
+
+  // Extract tags from data
+  const tags = [];
+  if (lead.interest?.interest_level === 'high') tags.push('High Interest');
+  if (lead.interest?.urgency_level === 'within_month') tags.push('Urgent');
+  if (lead.referrer) tags.push('My Lead');
+
+  // Build initial activities
+  const activities = [];
+  activities.push({
+    description: 'Lead created',
+    date: new Date(lead.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+    icon: 'add-circle',
+    type: 'note',
+  });
+
+  return {
+    ...lead,
+    id: lead._id,
+    leadType,
+    productType,
+    needsRenewal: false,
+    upsellPotential: lead.interest?.interest_level === 'high',
+    lastContact: 'Not contacted yet',
+    dateAdded: new Date(lead.createdAt).toISOString().split('T')[0],
+    tags: tags,
+    activities: activities,
+    interestScore,
+    aiSuggestion: lead.interest?.interest_level === 'high' 
+      ? 'High priority - Schedule follow-up within 24 hours' 
+      : lead.interest?.interest_level === 'medium'
+        ? 'Medium priority - Send product information'
+        : 'Low priority - Add to nurture campaign',
+  };
 };
 
 export default function PostSaleDashboardScreen() {
@@ -105,87 +201,121 @@ export default function PostSaleDashboardScreen() {
   const [loadingContacts, setLoadingContacts] = useState<boolean>(false);
   const [aiCallPrompt, setAICallPrompt] = useState<string>('');
   const [processingAICalls, setProcessingAICalls] = useState<boolean>(false);
+  const [processingContacts, setProcessingContacts] = useState<boolean>(false);
+  const [customerLeads, setCustomerLeads] = useState<CustomerLead[]>([]);
+  const [fetchingLeads, setFetchingLeads] = useState<boolean>(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [buttonScaleAnim] = useState(new Animated.Value(1));
+  const [buttonBgAnim] = useState(new Animated.Value(0));
+  const slideAnim = useRef(new Animated.Value(screenHeight)).current; 
+
+
+const interpolatedButtonBg = buttonBgAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: ['#8B5CF6', '#D946EF', '#8B5CF6'], 
+  });
+
 
   const primaryColor = '#04457E';
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
+  
 
-  // Updated sample lead data to match new types
-  const [customerLeads, setCustomerLeads] = useState<CustomerLead[]>([
-    {
-      id: 1,
-      name: 'Ajay Sharma',
-      phone: '+91 98765 43210',
-      email: 'ajay.sharma@email.com',
-      productType: 'Term Insurance',
-      status: 'active',
-      leadType: 'active',
-      needsRenewal: false,
-      upsellPotential: true,
-      policyEndDate: '12 Aug 2024',
-      lastContact: '3 days ago',
-      dateAdded: '2024-04-15',
-      tags: ['High Value', 'Premium'],
-      interestScore: 8,
-      activities: [
-        {
-          description: 'You discussed policy features',
-          date: '7 May',
-          icon: 'chatbubble',
-          type: 'message',
-        },
-        {
-          description: 'Follow-up call made',
-          date: '9 May',
-          icon: 'call',
-          type: 'call',
-        },
-      ],
-      aiSuggestion: 'Recommend Health Insurance',
-    },
-    {
-      id: 2,
-      name: 'Priya Gupta',
-      phone: '+91 87654 32109',
-      email: 'priya.gupta@email.com',
-      productType: 'Health Insurance',
-      status: 'needs_renewal',
-      leadType: 'active',
-      needsRenewal: true,
-      upsellPotential: false,
-      policyEndDate: '22 Jun 2024',
-      lastContact: 'Yesterday',
-      dateAdded: '2024-03-20',
-      tags: ['Renewal Due'],
-      interestScore: 6,
-      activities: [
-        {
-          description: 'Sent renewal reminder',
-          date: '18 May',
-          icon: 'chatbubble',
-          type: 'message',
-        },
-      ],
-      aiSuggestion: 'Suggest Top-Up Policy',
-    },
-  ]);
+  useEffect(() => {
+    StatusBar.setBackgroundColor(primaryColor);
+    StatusBar.setBarStyle('light-content');
+    
+    fetchLeads();
 
-  const filterTabs = [
-    { key: 'New Leads', label: 'New Leads', count: customerLeads.filter(l => l.leadType === 'new').length },
-    { key: 'Active', label: 'Active', count: customerLeads.filter(l => l.leadType === 'active').length },
-    { key: 'AI Processing', label: 'AI Processing', count: customerLeads.filter(l => l.leadType === 'ai_processing').length },
-    { key: 'Renewal', label: 'Renewals', count: customerLeads.filter(l => l.needsRenewal).length },
-    { key: 'Upsell', label: 'Upsell', count: customerLeads.filter(l => l.upsellPotential).length },
-  ];
+    // Animation for the AI Call Setup button
+    const scaleAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(buttonScaleAnim, {
+          toValue: 1.05,
+          duration: 800,
+          useNativeDriver: false, // CHANGED FROM true to false
+        }),
+        Animated.timing(buttonScaleAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: false, // CHANGED FROM true to false
+        }),
+      ])
+    );
 
-  // Updated to use consistent leadType values
+    const bgAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(buttonBgAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: false, // This was already false, which is correct for backgroundColor
+        }),
+        Animated.timing(buttonBgAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: false, // This was already false
+        }),
+      ])
+    );
+    
+    scaleAnimation.start();
+    bgAnimation.start();
+
+    return () => {
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('white');
+        StatusBar.setBarStyle('dark-content');
+      }
+      scaleAnimation.stop();
+      bgAnimation.stop();
+    };
+  }, []);  
+
+  // Updated to fetch leads from API
+  const fetchLeads = async () => {
+    try {
+      setFetchingLeads(true);
+      
+      // First, get the user profile to get the user ID
+      const profileResponse = await apiService.getProfile();
+      if (!profileResponse.success || !profileResponse.data) {
+        Alert.alert('Error', 'Failed to fetch your profile');
+        setFetchingLeads(false);
+        return;
+      }
+      
+      setUserProfile(profileResponse.data.gp);
+      const userId = profileResponse.data.gp._id;
+      
+      // Now fetch all leads
+      const response = await apiService.getLeads();
+      if (!response.success || !response.data) {
+        Alert.alert('Error', 'Failed to fetch leads');
+        setFetchingLeads(false);
+        return;
+      }
+      
+      // Filter leads that belong to the current user
+      const myLeads = response.data.leads
+        .filter((lead: any) => lead.referrer_gp_id === userId)
+        .map(formatLeadForDisplay);
+      
+      setCustomerLeads(myLeads);
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+      Alert.alert('Error', 'Failed to fetch leads');
+    } finally {
+      setFetchingLeads(false);
+    }
+  };
+
+  // Updated getFilteredLeads function to filter by status directly (case-insensitive)
   const getFilteredLeads = () => {
     switch (activeFilter) {
       case 'New Leads':
-        return customerLeads.filter(lead => lead.leadType === 'new');
+        return customerLeads.filter(lead => lead.status.toLowerCase() === 'new');
       case 'Active':
-        return customerLeads.filter(lead => lead.leadType === 'active');
+        return customerLeads.filter(lead => lead.status.toLowerCase() === 'active');
       case 'AI Processing':
-        return customerLeads.filter(lead => lead.leadType === 'ai_processing');
+        return customerLeads.filter(lead => lead.status.toLowerCase() === 'ai_processing');
       case 'Renewal':
         return customerLeads.filter(lead => lead.needsRenewal);
       case 'Upsell':
@@ -194,6 +324,15 @@ export default function PostSaleDashboardScreen() {
         return customerLeads;
     }
   };
+
+  // Update the filter tabs to count by status instead of leadType (case-insensitive)
+  const filterTabs = [
+    { key: 'New Leads', label: 'New Leads', count: customerLeads.filter(l => l.status.toLowerCase() === 'new').length },
+    { key: 'Active', label: 'Active', count: customerLeads.filter(l => l.status.toLowerCase() === 'active').length },
+    { key: 'AI Processing', label: 'AI Processing', count: customerLeads.filter(l => l.status.toLowerCase() === 'ai_processing').length },
+    { key: 'Renewal', label: 'Renewals', count: customerLeads.filter(l => l.needsRenewal).length },
+    { key: 'Upsell', label: 'Upsell', count: customerLeads.filter(l => l.upsellPotential).length },
+  ];
 
   const showAICallBottomSheet = () => {
     setShowAICallModal(true);
@@ -265,32 +404,81 @@ export default function PostSaleDashboardScreen() {
     }
   };
 
-  const handleAddContactsAsLeads = () => {
+  const handleAddContactsAsLeads = async () => {
     if (selectedContacts.length === 0) {
       Alert.alert('No Selection', 'Please select at least one contact');
       return;
     }
 
-    const newLeads: CustomerLead[] = selectedContacts.map((contact, index) => ({
-      id: Math.max(...customerLeads.map(l => l.id)) + index + 1,
-      name: contact.name,
-      phone: contact.phoneNumbers?.[0]?.number || '',
-      email: contact.emails?.[0]?.email || '',
-      productType: 'Not Specified',
-      status: 'new',
-      leadType: 'new',
-      needsRenewal: false,
-      upsellPotential: false,
-      dateAdded: new Date().toISOString().split('T')[0],
-      tags: ['From Contacts'],
-      activities: [],
-      aiSuggestion: 'Schedule AI call within 24 hours',
-    }));
+    console.log("Adding")
 
-    setCustomerLeads(prev => [...prev, ...newLeads]);
-    setSelectedContacts([]);
-    setShowContactModal(false);
-    Alert.alert('Success', `Added ${newLeads.length} contacts as new leads`);
+    setProcessingContacts(true);
+
+    try {
+      // Create an array of promises for each contact
+      const createLeadPromises = selectedContacts.map(async (contact) => {
+        // Format the phone number to meet validation requirements
+        let phoneNumber = '';
+        if (contact.phoneNumbers && contact.phoneNumbers.length > 0) {
+          // Remove all non-digit characters except the + sign at the beginning
+          phoneNumber = contact.phoneNumbers[0].number || '';
+          if (!phoneNumber.startsWith('+')) {
+            // Add a + prefix if missing (using Indian country code as default)
+            phoneNumber = '+91' + phoneNumber.replace(/\D/g, '');
+          } else {
+            // Keep the + but remove other non-digits
+            phoneNumber = '+' + phoneNumber.substring(1).replace(/\D/g, '');
+          }
+        }
+
+        // Only include available fields with properly formatted phone
+        const leadData = {
+          contact: {
+            name: contact.name || 'Unknown',
+            phone: phoneNumber,
+            email: contact.emails?.[0]?.email || undefined,
+            // Leave other fields empty as instructed
+          },
+          interest: {
+            // Leave interest fields empty as instructed
+          },
+          // No notes
+        };
+
+        console.log('Creating lead with data:', JSON.stringify(leadData));
+
+        // Call the API to create the lead
+        return apiService.createLead(leadData);
+      });
+
+      // Wait for all API calls to complete
+      const results = await Promise.all(createLeadPromises);
+      
+      // Count successful and failed operations
+      const successful = results.filter(r => r.success).length;
+      const failed = results.length - successful;
+
+      // Refresh leads after creating new ones
+      await fetchLeads();
+
+      // Show appropriate message
+      if (failed === 0) {
+        Alert.alert('Success', `Added ${successful} contacts as new leads`);
+      } else if (successful === 0) {
+        Alert.alert('Error', 'Failed to add any contacts as leads. Please try again.');
+      } else {
+        Alert.alert('Partial Success', `Added ${successful} contacts as leads. Failed to add ${failed} contacts.`);
+      }
+
+      // Clear selection and close modal
+      setSelectedContacts([]);
+      setShowContactModal(false);
+    } catch (error) {
+      console.error('Error creating leads:', error);
+      Alert.alert('Error', 'Failed to add contacts as leads. Please try again.');
+    } finally {
+      setProcessingContacts(false);
+    }
   };
 
   const handleSelectLeadForAI = (lead: CustomerLead) => {
@@ -319,7 +507,7 @@ export default function PostSaleDashboardScreen() {
             leadType: 'ai_processing',
             status: 'ai_processing',
             activities: [
-              ...lead.activities,
+              ...(lead.activities || []),
               {
                 description: 'AI call scheduled',
                 date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
@@ -340,20 +528,20 @@ export default function PostSaleDashboardScreen() {
           if (selectedLeadsForAI.some(selected => selected.id === lead.id)) {
             const mockAIData: AICallData = {
               contact: {
-                name: lead.name,
-                phone: lead.phone || '',
-                email: lead.email,
-                age: Math.floor(Math.random() * 40) + 25,
-                region: ['North', 'South', 'East', 'West'][Math.floor(Math.random() * 4)],
-                preferred_language: 'English',
+                name: lead.contact.name,
+                phone: lead.contact.phone || '',
+                email: lead.contact.email,
+                age: lead.contact.age || Math.floor(Math.random() * 40) + 25,
+                region: lead.contact.region || ['North', 'South', 'East', 'West'][Math.floor(Math.random() * 4)],
+                preferred_language: lead.contact.preferred_language || 'English',
               },
               interest: {
-                products: ['home_loan', 'insurance', 'investment'][Math.floor(Math.random() * 3)] === 'home_loan' ? ['home_loan'] : ['insurance'],
-                interest_level: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)] as 'low' | 'medium' | 'high',
-                budget_range: '100000-200000',
-                urgency_level: ['within_month', 'within_year'][Math.floor(Math.random() * 2)] as 'within_month' | 'within_year',
+                products: lead.interest?.products || ['insurance'],
+                interest_level: lead.interest?.interest_level || 'medium' as 'low' | 'medium' | 'high',
+                budget_range: lead.interest?.budget_range || '100000-200000',
+                urgency_level: lead.interest?.urgency_level === 'within_month' ? 'within_month' : 'within_year',
               },
-              notes: `Interested in ${['low-interest home loans', 'comprehensive insurance coverage', 'investment opportunities'][Math.floor(Math.random() * 3)]}.`,
+              notes: lead.notes || `Interested in ${lead.interest?.products?.map(p => p.replace('_', ' ')).join(', ') || 'insurance products'}.`,
             };
 
             return {
@@ -361,11 +549,10 @@ export default function PostSaleDashboardScreen() {
               leadType: 'active',
               status: 'active',
               aiCallData: mockAIData,
-              productType: mockAIData.interest.products[0] === 'home_loan' ? 'Home Loan' : 'Insurance',
               interestScore: mockAIData.interest.interest_level === 'high' ? 8 : mockAIData.interest.interest_level === 'medium' ? 6 : 4,
               lastContact: 'AI call completed',
               activities: [
-                ...lead.activities,
+                ...(lead.activities || []),
                 {
                   description: 'AI call completed successfully',
                   date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
@@ -397,23 +584,25 @@ export default function PostSaleDashboardScreen() {
     }, 3000);
   };
 
-  const addActivity = (leadId: number, activity: Omit<CustomerLead['activities'][0], 'date'>) => {
+  const addActivity = (leadId: string, activity: Omit<NonNullable<CustomerLead['activities']>[number], 'date'>) => {
     setCustomerLeads(prev =>
       prev.map(lead => {
         if (lead.id === leadId) {
           return {
             ...lead,
-            leadType: 'active',
+            leadType: 'active' as const,
             status: 'active',
             lastContact: 'Just now',
             activities: [
-              ...lead.activities,
+              ...(lead.activities || []),
               {
-                ...activity,
+                description: activity.description,
+                icon: activity.icon,
+                type: activity.type,
                 date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
               },
             ],
-          };
+          } as CustomerLead;
         }
         return lead;
       })
@@ -421,8 +610,8 @@ export default function PostSaleDashboardScreen() {
   };
 
   const handleCall = (lead: CustomerLead) => {
-    if (lead.phone) {
-      Linking.openURL(`tel:${lead.phone}`);
+    if (lead.contact.phone) {
+      Linking.openURL(`tel:${lead.contact.phone}`);
       addActivity(lead.id, {
         description: 'Made a call',
         icon: 'call',
@@ -434,8 +623,8 @@ export default function PostSaleDashboardScreen() {
   };
 
   const handleWhatsApp = (lead: CustomerLead) => {
-    if (lead.phone) {
-      const cleanPhone = lead.phone.replace(/[^\d]/g, '');
+    if (lead.contact.phone) {
+      const cleanPhone = lead.contact.phone.replace(/[^\d]/g, '');
       Linking.openURL(`whatsapp://send?phone=${cleanPhone}`);
       addActivity(lead.id, {
         description: 'Sent WhatsApp message',
@@ -451,12 +640,15 @@ export default function PostSaleDashboardScreen() {
     contact.name.toLowerCase().includes(searchContact.toLowerCase())
   );
 
-  const newLeads = getFilteredLeads().filter(lead => lead.leadType === 'new');
+  const newLeads = customerLeads.filter(lead => lead.status.toLowerCase() === 'new');
   const hasNewLeads = newLeads.length > 0;
 
   useEffect(() => {
     StatusBar.setBackgroundColor(primaryColor);
     StatusBar.setBarStyle('light-content');
+    
+    // Fetch leads when component mounts
+    fetchLeads();
 
     return () => {
       if (Platform.OS === 'android') {
@@ -473,6 +665,26 @@ export default function PostSaleDashboardScreen() {
   const navigateToCallAnalysis = () => {
     router.push('/ai-call-analysis');
   };
+
+  // Loading state
+  if (fetchingLeads) {
+    return (
+      <SafeAreaView 
+        edges={['right', 'left','top']} 
+        className="flex-1"
+        style={{ backgroundColor: primaryColor }}
+      >
+        <StatusBar backgroundColor={primaryColor} barStyle="light-content" translucent={true} />
+        <View className="bg-primary py-5 px-4 flex-row justify-between items-center">
+          <Text className="text-white text-2xl font-bold">Gromo+</Text>
+        </View>
+        <View className="flex-1 bg-gray-50 justify-center items-center">
+          <ActivityIndicator size="large" color={primaryColor} />
+          <Text className="mt-4 text-gray-600 text-lg">Loading your leads...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <>
@@ -530,6 +742,9 @@ export default function PostSaleDashboardScreen() {
           <ScrollView showsVerticalScrollIndicator={false}>
             <View className="px-4 pt-4 pb-2">
               <Text className="text-3xl font-bold text-primary">My Leads</Text>
+              {userProfile && (
+                <Text className="text-gray-500">Welcome back, {userProfile.name}</Text>
+              )}
             </View>
 
             {/* Action Buttons Row */}
@@ -545,7 +760,7 @@ export default function PostSaleDashboardScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="flex-1 rounded-2xl p-4 flex-row items-center bg-[#18FFAA]"
+                className="flex-1 rounded-2xl p-4 ml-2 flex-row items-center bg-[#18FFAA]"
                 onPress={() => {
                   setShowContactModal(true);
                   fetchContacts();
@@ -554,7 +769,7 @@ export default function PostSaleDashboardScreen() {
                 <View className="w-10 h-10 rounded-full items-center justify-center mr-3" style={{ backgroundColor: primaryColor }}>
                   <Ionicons name="people" size={20} color="#18FFAA" />
                 </View>
-                <View className="flex-1">
+                <View className="flex-1 b">
                   <Text className="font-bold text-sm" style={{ color: primaryColor }}>
                     Add Contacts
                   </Text>
@@ -566,27 +781,50 @@ export default function PostSaleDashboardScreen() {
             </View>
 
             {/* AI Call Automation Card */}
-            {hasNewLeads && (
-              <View className="mx-4 mt-4 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl p-4 shadow-lg">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center flex-1">
-                    <View className="w-12 h-12 bg-white rounded-full items-center justify-center mr-3">
-                      <MaterialCommunityIcons name="robot" size={24} color="#8B5CF6" />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-white text-lg font-bold">AI Cold Calling</Text>
-                      <Text className="text-purple-200 text-sm">Auto-screen {newLeads.length} new leads with AI calls</Text>
-                    </View>
+          {hasNewLeads && (
+            <View className="mx-4 mt-4 bg-slate-200 rounded-xl p-4 shadow-lg border-e-purple-500">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View className="w-12 h-12 bg-white rounded-full items-center justify-center mr-3">
+                    <MaterialCommunityIcons name="robot" size={24} color="#8B5CF6" />
                   </View>
-                  <TouchableOpacity className="bg-white px-4 py-2 rounded-full" onPress={showAICallBottomSheet}>
-                    <Text className="text-purple-600 font-bold">Setup</Text>
-                  </TouchableOpacity>
+                  <View className="flex-1">
+                    <Text className="text-primary text-lg font-bold">AI Cold Calling</Text>
+                    <Text className="text-purple-600 text-sm">Auto-screen {newLeads.length} new leads with AI calls</Text>
+                  </View>
                 </View>
+                <TouchableOpacity onPress={showAICallBottomSheet} activeOpacity={0.8}>
+                  <Animated.View
+                    style={{
+                      backgroundColor: interpolatedButtonBg,
+                      transform: [{ scale: buttonScaleAnim }],
+                      borderRadius: 9999, 
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 3 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 4.65,
+                      elevation: 6, 
+                    }}
+                    
+                    className="px-5 py-3 flex-row items-center justify-center" 
+                  >
+                    <MaterialCommunityIcons 
+                      name="robot-excited-outline" // Engaging icon
+                      size={20} 
+                      color="white" 
+                      style={{ marginRight: 8 }} 
+                    />
+                    <Text className="text-white font-bold text-base">
+                      Setup AI Calls
+                    </Text>
+                  </Animated.View>
+                </TouchableOpacity>
               </View>
-            )}
+            </View>
+          )}
 
             {/* AI Assistant Card */}
-            <View className="mx-4 mt-4 bg-white p-4 rounded-xl shadow-sm">
+            {/* <View className="mx-4 mt-4 bg-white p-4 rounded-xl shadow-sm">
               <View className="flex-row items-center">
                 <View className="w-12 h-12 rounded-full items-center justify-center mr-3" style={{ backgroundColor: primaryColor }}>
                   <MaterialCommunityIcons name="robot" size={24} color="#18FFAA" />
@@ -598,7 +836,7 @@ export default function PostSaleDashboardScreen() {
                   <Text className="text-gray-600 text-sm">Monitors renewals, upsell opportunities & suggests best contact times.</Text>
                 </View>
               </View>
-            </View>
+            </View> */}
 
             {/* Filter Tabs */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 mt-6">
@@ -617,6 +855,25 @@ export default function PostSaleDashboardScreen() {
               ))}
             </ScrollView>
 
+            {/* No leads message */}
+            {getFilteredLeads().length === 0 && (
+              <View className="mx-4 my-10 p-6 bg-white rounded-xl items-center justify-center shadow-sm">
+                <Ionicons name="search-outline" size={48} color="#d1d5db" />
+                <Text className="text-lg font-medium text-gray-500 mt-4 text-center">No leads found in this category</Text>
+                <Text className="text-sm text-gray-400 mt-2 text-center">
+                  {activeFilter === 'New Leads' 
+                    ? "Import contacts or buy leads to get started" 
+                    : `Switch to another category or add more leads`}
+                </Text>
+                <TouchableOpacity 
+                  className="mt-6 py-3 px-6 rounded-lg bg-blue-50"
+                  onPress={() => setShowContactModal(true)}
+                >
+                  <Text className="text-primary font-medium">Add Contacts</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Customer Cards */}
             {getFilteredLeads().map(customer => (
               <View key={customer.id} className="mx-4 mt-4 bg-white rounded-xl shadow-sm overflow-hidden">
@@ -626,7 +883,7 @@ export default function PostSaleDashboardScreen() {
                     <View
                       className="w-12 h-12 rounded-full items-center justify-center"
                       style={{
-                        backgroundColor: getLeadTypeColor(customer.leadType),
+                        backgroundColor: getLeadTypeColor(customer.leadType || 'new'),
                       }}
                     >
                       {customer.leadType === 'ai_processing' ? (
@@ -635,17 +892,17 @@ export default function PostSaleDashboardScreen() {
                         <Text
                           className="text-lg font-bold"
                           style={{
-                            color: getLeadTextColor(customer.leadType),
+                            color: getLeadTextColor(customer.leadType || 'new'),
                           }}
                         >
-                          {customer.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                          {customer.contact.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
                         </Text>
                       )}
                     </View>
                     <View className="ml-3 flex-1">
                       <View className="flex-row items-center">
                         <Text className="text-lg font-bold" style={{ color: primaryColor }}>
-                          {customer.name}
+                          {customer.contact.name}
                         </Text>
                         {customer.interestScore && (
                           <View className="ml-2 px-2 py-1 bg-green-100 rounded-full">
@@ -655,15 +912,15 @@ export default function PostSaleDashboardScreen() {
                       </View>
                       <View className="flex-row items-center">
                         <Text className="text-gray-600 text-sm">{customer.productType}</Text>
-                        {customer.phone && (
+                        {customer.contact.phone && (
                           <>
                             <Text className="text-gray-400 mx-1">•</Text>
-                            <Text className="text-gray-500 text-sm">{customer.phone}</Text>
+                            <Text className="text-gray-500 text-sm">{customer.contact.phone}</Text>
                           </>
                         )}
                       </View>
                       {customer.leadType === 'new' && (
-                        <Text className="text-orange-600 text-xs font-medium mt-1">Added {new Date(customer.dateAdded).toLocaleDateString()}</Text>
+                        <Text className="text-orange-600 text-xs font-medium mt-1">Added {new Date(customer.createdAt).toLocaleDateString()}</Text>
                       )}
                       {customer.leadType === 'ai_processing' && (
                         <Text className="text-blue-600 text-xs font-medium mt-1">AI call in progress...</Text>
@@ -679,7 +936,7 @@ export default function PostSaleDashboardScreen() {
                           ? 'bg-orange-100'
                           : customer.status === 'ai_processing'
                           ? 'bg-blue-100'
-                          : customer.status === 'needs_renewal'
+                          : customer.needsRenewal
                           ? 'bg-red-100'
                           : customer.upsellPotential
                           ? 'bg-green-100'
@@ -692,7 +949,7 @@ export default function PostSaleDashboardScreen() {
                             ? 'text-orange-600'
                             : customer.status === 'ai_processing'
                             ? 'text-blue-600'
-                            : customer.status === 'needs_renewal'
+                            : customer.needsRenewal
                             ? 'text-red-600'
                             : customer.upsellPotential
                             ? 'text-green-600'
@@ -702,7 +959,7 @@ export default function PostSaleDashboardScreen() {
                         {customer.status.replace('_', ' ')}
                       </Text>
                     </View>
-                    {customer.tags.map((tag, index) => (
+                    {customer.tags && customer.tags.map((tag, index) => (
                       <View key={index} className="bg-gray-100 px-2 py-1 rounded-full mt-1">
                         <Text className="text-xs text-gray-600">{tag}</Text>
                       </View>
@@ -727,7 +984,9 @@ export default function PostSaleDashboardScreen() {
                       </View>
                       <View className="flex-1 mr-2">
                         <Text className="text-xs text-gray-600">Products</Text>
-                        <Text className="text-sm font-medium text-blue-600">{customer.aiCallData.interest.products.join(', ')}</Text>
+                        <Text className="text-sm font-medium text-blue-600">
+                          {customer.aiCallData.interest.products.map(p => p.replace('_', ' ')).join(', ')}
+                        </Text>
                       </View>
                       <View className="flex-1">
                         <Text className="text-xs text-gray-600">Urgency</Text>
@@ -738,22 +997,69 @@ export default function PostSaleDashboardScreen() {
                   </View>
                 )}
 
-                {/* Policy Details for Active Leads */}
-                {customer.leadType === 'active' && customer.policyEndDate && (
-                  <View className="px-4 pb-4 flex-row justify-between border-b border-gray-100">
-                    <View className="flex-row items-center">
-                      <Ionicons name="calendar" size={16} color="#6b7280" />
-                      <View className="ml-2">
-                        <Text className="text-xs text-gray-500">Policy End:</Text>
-                        <Text className="text-sm font-medium text-gray-800">{customer.policyEndDate}</Text>
+                {/* Interest Info for Leads */}
+                {customer.interest && customer.interest.interest_level && !customer.aiCallData && (
+                  <View className="px-4 pb-4 bg-gray-50 border-b border-gray-100">
+                    <Text className="text-sm font-semibold text-gray-800 mb-2">Lead Information</Text>
+                    <View className="flex-row justify-between">
+                      <View className="flex-1 mr-2">
+                        <Text className="text-xs text-gray-600">Interest Level</Text>
+                        <Text
+                          className={`text-sm font-medium ${
+                            customer.interest.interest_level === 'high' ? 'text-green-600' : 
+                            customer.interest.interest_level === 'medium' ? 'text-yellow-600' : 
+                            'text-red-600'
+                          }`}
+                        >
+                          {customer.interest.interest_level.toUpperCase()}
+                        </Text>
                       </View>
+                      <View className="flex-1 mr-2">
+                        <Text className="text-xs text-gray-600">Products</Text>
+                        <Text className="text-sm font-medium text-blue-600">
+                          {customer.interest.products.map(p => p.replace('_', ' ')).join(', ')}
+                        </Text>
+                      </View>
+                      {customer.interest.urgency_level && (
+                        <View className="flex-1">
+                          <Text className="text-xs text-gray-600">Urgency</Text>
+                          <Text className="text-sm font-medium text-purple-600">
+                            {customer.interest.urgency_level.replace('_', ' ')}
+                          </Text>
+                        </View>
+                      )}
                     </View>
-                    {customer.lastContact && (
+                    {customer.notes && <Text className="text-sm text-gray-700 mt-2 italic">"{customer.notes}"</Text>}
+                  </View>
+                )}
+
+                {/* Additional Contact Info */}
+                {(customer.contact.email || customer.contact.age || customer.contact.region) && (
+                  <View className="px-4 pb-4 flex-row justify-between border-b border-gray-100">
+                    {customer.contact.email && (
                       <View className="flex-row items-center">
-                        <Ionicons name="time" size={16} color="#6b7280" />
+                        <Ionicons name="mail" size={16} color="#6b7280" />
                         <View className="ml-2">
-                          <Text className="text-xs text-gray-500">Last Contact:</Text>
-                          <Text className="text-sm font-medium text-gray-800">{customer.lastContact}</Text>
+                          <Text className="text-xs text-gray-500">Email:</Text>
+                          <Text className="text-sm font-medium text-gray-800">{customer.contact.email}</Text>
+                        </View>
+                      </View>
+                    )}
+                    {customer.contact.age && (
+                      <View className="flex-row items-center">
+                        <Ionicons name="person" size={16} color="#6b7280" />
+                        <View className="ml-2">
+                          <Text className="text-xs text-gray-500">Age:</Text>
+                          <Text className="text-sm font-medium text-gray-800">{customer.contact.age} years</Text>
+                        </View>
+                      </View>
+                    )}
+                    {customer.contact.region && (
+                      <View className="flex-row items-center">
+                        <Ionicons name="location" size={16} color="#6b7280" />
+                        <View className="ml-2">
+                          <Text className="text-xs text-gray-500">Region:</Text>
+                          <Text className="text-sm font-medium text-gray-800">{customer.contact.region}</Text>
                         </View>
                       </View>
                     )}
@@ -763,17 +1069,9 @@ export default function PostSaleDashboardScreen() {
                 {/* Activity Timeline or AI Suggestion */}
                 <View className="p-4">
                   {customer.leadType === 'new' ? (
-                    <View className="flex-row items-start">
-                      <View className="mr-3 mt-1">
-                        <View className="bg-purple-100 w-8 h-8 rounded-full items-center justify-center">
-                          <Ionicons name="flash" size={16} color="#8b5cf6" />
-                        </View>
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-gray-600 text-sm">AI Recommendation:</Text>
-                        <Text style={{ color: primaryColor }} className="font-medium">
-                          {customer.aiSuggestion}
-                        </Text>
+                    <View className="flex-row items-start justify-center">
+                      <View className="bg-orange-100 px-3 py-2 rounded-lg">
+                        <Text className="text-orange-700 text-sm font-medium">New lead - waiting for first contact</Text>
                       </View>
                     </View>
                   ) : customer.leadType === 'ai_processing' ? (
@@ -790,7 +1088,7 @@ export default function PostSaleDashboardScreen() {
                     </View>
                   ) : (
                     <>
-                      {customer.activities.slice(-2).map((activity, index) => (
+                      {customer.activities && customer.activities.slice(-2).map((activity, index) => (
                         <View key={index} className="flex-row items-start mb-2">
                           <View className="mr-3 mt-1">
                             <View
@@ -821,7 +1119,7 @@ export default function PostSaleDashboardScreen() {
                           <Text className="text-gray-500 text-xs">{activity.date}</Text>
                         </View>
                       ))}
-                      {customer.aiSuggestion && (
+                      {customer.status.toLowerCase() !== 'new' && customer.aiSuggestion && (
                         <View className="flex-row items-start mt-2">
                           <View className="mr-3 mt-1">
                             <View className="bg-purple-100 w-8 h-8 rounded-full items-center justify-center">
@@ -861,6 +1159,7 @@ export default function PostSaleDashboardScreen() {
                     </Text>
                   </TouchableOpacity>
                 </View>
+
               </View>
             ))}
             <View className="h-20" />
@@ -883,13 +1182,17 @@ export default function PostSaleDashboardScreen() {
               <View className="flex-row justify-between items-center mt-4">
                 <Text className="text-gray-600">{selectedContacts.length} selected</Text>
                 <TouchableOpacity
-                  className="px-4 py-2 rounded-lg"
-                  style={{ backgroundColor: selectedContacts.length > 0 ? primaryColor : '#D1D5DB' }}
-                  onPress={handleAddContactsAsLeads}
-                  disabled={selectedContacts.length === 0}
-                >
-                  <Text className="text-white font-medium">Add as Leads</Text>
-                </TouchableOpacity>
+  className="px-4 py-2 rounded-lg"
+  style={{ backgroundColor: selectedContacts.length > 0 ? primaryColor : '#D1D5DB' }}
+  onPress={handleAddContactsAsLeads}
+  disabled={selectedContacts.length === 0 || processingContacts}
+>
+  {processingContacts ? (
+    <Text className="text-white font-medium">Adding...</Text>
+  ) : (
+    <Text className="text-white font-medium">Add as Leads</Text>
+  )}
+</TouchableOpacity>
               </View>
             </View>
             {loadingContacts ? (
@@ -966,9 +1269,9 @@ export default function PostSaleDashboardScreen() {
                         {isSelected && <Ionicons name="checkmark" size={14} color="white" />}
                       </View>
                       <View className="flex-1">
-                        <Text className="font-medium text-gray-900">{lead.name}</Text>
-                        <Text className="text-gray-600 text-sm">{lead.phone}</Text>
-                        <Text className="text-gray-500 text-xs">Added: {new Date(lead.dateAdded).toLocaleDateString()}</Text>
+                        <Text className="font-medium text-gray-900">{lead.contact.name}</Text>
+                        <Text className="text-gray-600 text-sm">{lead.contact.phone}</Text>
+                        <Text className="text-gray-500 text-xs">Added: {new Date(lead.createdAt).toLocaleDateString()}</Text>
                       </View>
                     </TouchableOpacity>
                   );
@@ -1013,4 +1316,6 @@ export default function PostSaleDashboardScreen() {
       </SafeAreaView>
     </>
   );
+
+  
 }

@@ -140,6 +140,35 @@ export interface CourseStartResponse {
   course: Course;
 }
 
+// Add new interfaces for lead creation
+export interface LeadContact {
+  name: string;
+  phone: string;
+  email?: string;
+  age?: number;
+  region?: string;
+  preferred_language?: string;
+}
+
+export interface LeadInterest {
+  products?: string[];
+  interest_level?: 'low' | 'medium' | 'high';
+  budget_range?: string;
+  urgency_level?: 'no_urgency' | 'within_year' | 'within_month' | 'immediate';
+}
+
+export interface CreateLeadRequest {
+  contact: LeadContact;
+  interest: LeadInterest;
+  notes?: string;
+}
+
+export interface CreateLeadResponse {
+  success: boolean;
+  message: string;
+  lead: any; // You can define a more specific type if needed
+}
+
 // Add after existing interfaces
 export interface ModuleStartResponse {
   success: boolean;
@@ -377,8 +406,43 @@ class ApiService {
       return `Status: ${response.status}, Response: ${text.substring(0, 100)}...`;
     } catch (error) {
       console.error('Endpoint test failed:', error);
-      return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      return `Error: ${error instanceof Error ? error.message : String(error)}`;
     }
+  }
+
+  // Add this method to the ApiService class
+ // Update the createLead method
+
+async createLead(leadData: CreateLeadRequest): Promise<ApiResponse<CreateLeadResponse>> {
+  console.log('Creating lead:', leadData.contact.name);
+  
+  // Filter out undefined fields to avoid sending empty values
+  const filteredLeadData = {
+    contact: Object.fromEntries(
+      Object.entries(leadData.contact).filter(([_, value]) => value !== undefined)
+    ),
+    interest: Object.fromEntries(
+      Object.entries(leadData.interest || {}).filter(([_, value]) => value !== undefined)
+    ),
+    notes: leadData.notes
+  };
+
+  // Only include notes if it's defined
+  if (!filteredLeadData.notes) {
+    delete filteredLeadData.notes;
+  }
+  
+  return this.makeRequest('/api', '/leads', {
+    method: 'POST',
+    body: JSON.stringify(filteredLeadData),
+  }, true);
+}
+
+// Add to your ApiService class in api.ts
+async getLeads(): Promise<ApiResponse<any>> {
+  return this.makeRequest('/api', '/leads', {
+    method: 'GET',
+  }, true);
   }
 
   // Add these methods after getModuleDetails
@@ -421,7 +485,7 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ selected_option: selectedOption }),
     }, true);
-  }
+}
 }
 
 export const apiService = new ApiService();
