@@ -1,5 +1,10 @@
 // services/api.ts
-const BASE_URL = 'http://192.168.76.89:5000/api/gp';
+const SERVER_BASE = 'http://192.168.16.66:5000';
+const API_PATHS = {
+  GP: '/api/gp',
+  LMS: '/api/lms',
+};
+
 export interface RegisterRequest {
   name: string;
   age: number;
@@ -52,11 +57,84 @@ export interface ProfileResponse {
   gp: UserProfile;
 }
 
+export interface Course {
+  _id: string;
+  course_id: string;
+  learner_id: string;
+  title: string;
+  topic: string;
+  module_ids: string[];
+  status: string;
+  progress_percentage: number;
+  language: string;
+  created_at: string;
+  modules?: any[];
+}
+
+export interface CoursesResponse {
+  success: boolean;
+  message: string;
+  courses: Course[];
+  summary: {
+    total: number;
+    completed: number;
+    in_progress: number;
+    not_started: number;
+  }
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
   error?: string;
+}
+
+// Add new interfaces for course details
+export interface ModuleProgress {
+  _id: string;
+  learner_id: string;
+  module_id: string;
+  status: string;
+  progress_percentage: number;
+  completed_sections: string[];
+  createdAt: string;
+  updatedAt: string;
+  last_accessed?: string;
+}
+
+export interface CaseScenario {
+  context: string;
+  question: string;
+  options: string[];
+  correct_option: string;
+  rationale: string;
+}
+
+export interface Module {
+  _id: string;
+  module_id: string;
+  title: string;
+  category: string;
+  estimated_time_min: number;
+  generated_summary: string;
+  content: string;
+  video_url?: string;
+  external_resources?: string[];
+  case_scenario?: CaseScenario;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ModuleDetailsResponse {
+  module: Module;
+  progress: ModuleProgress;
+}
+
+export interface CourseStartResponse {
+  success: boolean;
+  message: string;
+  course: Course;
 }
 
 class ApiService {
@@ -71,6 +149,7 @@ class ApiService {
   }
 
   private async makeRequest<T>(
+    path: string,
     endpoint: string,
     options: RequestInit,
     requireAuth: boolean = false
@@ -92,18 +171,50 @@ class ApiService {
           };
         }
       }
-
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
+      
+      // Ensure paths are correctly formatted
+      const formattedPath = path.startsWith('/') ? path : `/${path}`;
+      const formattedEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+      
+      const url = `${SERVER_BASE}${formattedPath}/${formattedEndpoint}`;
+      console.log(`Making request to: ${url}`);
+      console.log('Headers:', JSON.stringify(headers, null, 2));
+      
+      // Add timeout to the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+      
+      const response = await fetch(url, {
         headers,
         ...options,
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
+      console.log(`Response status: ${response.status} ${response.statusText}`);
+
+      // Check if the response is JSON
+      const contentType = response.headers.get('content-type');
+      console.log('Content-Type:', contentType);
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Non-JSON response received:', contentType);
+        const text = await response.text();
+        console.error('Response text:', text.substring(0, 200) + '...'); // Log first 200 chars
+        return {
+          success: false,
+          error: `Invalid response format (${contentType}). Expected JSON. Server returned: ${text.substring(0, 100)}...`,
+        };
+      }
 
       const data = await response.json();
+      console.log('Response data:', JSON.stringify(data, null, 2).substring(0, 200) + '...');
 
       if (!response.ok) {
         return {
           success: false,
-          error: data.message || data.error || 'Something went wrong',
+          error: data.message || data.error || `HTTP Error: ${response.status} ${response.statusText}`,
         };
       }
 
@@ -112,7 +223,23 @@ class ApiService {
         data,
         message: data.message,
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      // Check for timeout
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('Request timed out');
+        return {
+          success: false,
+          error: 'Request timed out. The server took too long to respond.',
+        };
+      }
+      
+      console.error('API request error:', error);
+      if (error instanceof SyntaxError && error.message.includes('JSON')) {
+        return {
+          success: false,
+          error: 'Invalid JSON response from server. Please check your connection or try again later.',
+        };
+      }
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error',
@@ -120,24 +247,80 @@ class ApiService {
     }
   }
 
+  // GP API endpoints
   async register(userData: RegisterRequest): Promise<ApiResponse<RegisterResponse>> {
-    return this.makeRequest('/register', {
+    return this.makeRequest(API_PATHS.GP, '/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   }
 
   async login(credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> {
-    return this.makeRequest('/login', {
+    return this.makeRequest(API_PATHS.GP, '/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
   }
 
   async getProfile(): Promise<ApiResponse<ProfileResponse>> {
-    return this.makeRequest('/profile', {
+    return this.makeRequest(API_PATHS.GP, '/profile', {
       method: 'GET',
     }, true);
+  }
+
+  // LMS API endpoints
+  async getCourses(): Promise<ApiResponse<CoursesResponse>> {
+    console.log('Fetching courses...');
+    return this.makeRequest(API_PATHS.LMS, '/courses', {
+      method: 'GET',
+    }, true);
+  }
+
+  async startCourse(courseId: string): Promise<ApiResponse<CourseStartResponse>> {
+    console.log('Starting course:', courseId);
+    return this.makeRequest(API_PATHS.LMS, `/courses/${courseId}/start`, {
+      method: 'POST',
+    }, true);
+  }
+
+  async getModuleDetails(moduleId: string): Promise<ApiResponse<ModuleDetailsResponse>> {
+    console.log('Fetching module details:', moduleId);
+    return this.makeRequest(API_PATHS.LMS, `/module/${moduleId}`, {
+      method: 'GET',
+    }, true);
+  }
+
+  // Connection testing methods
+  async testConnection(): Promise<boolean> {
+    try {
+      console.log(`Testing connection to ${SERVER_BASE}...`);
+      const response = await fetch(SERVER_BASE, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      console.log(`Connection test status: ${response.status}`);
+      return response.ok;
+    } catch (error) {
+      console.error('Connection test failed:', error);
+      return false;
+    }
+  }
+
+  async testEndpoint(path: string): Promise<string> {
+    try {
+      const url = `${SERVER_BASE}${path}`;
+      console.log(`Testing endpoint: ${url}`);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      const text = await response.text();
+      console.log(`Endpoint test result (${response.status}):`, text.substring(0, 200));
+      return `Status: ${response.status}, Response: ${text.substring(0, 100)}...`;
+    } catch (error) {
+      console.error('Endpoint test failed:', error);
+      return `Error: ${error.message}`;
+    }
   }
 }
 

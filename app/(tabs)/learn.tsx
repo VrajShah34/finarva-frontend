@@ -1,16 +1,23 @@
-import React from 'react';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { apiService, Course } from '../services/api';
 
 const LearningScreen = () => {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   // Mock data for weekly activity
   const weeklyActivity = [
     { day: 'Mon', hours: 1.5 },
@@ -22,39 +29,62 @@ const LearningScreen = () => {
     { day: 'Sun', hours: 0 },
   ];
   
-  // Mock data for recommended courses
-  const recommendedCourses = [
-    {
-      id: '1',
-      title: 'Spanish Conversation Skills',
-      description: 'Take your Spanish to the next level with practical conversation scenarios.',
-      modules: '12 modules',
-      duration: '8 weeks',
-      level: 'INTERMEDIATE',
-      buttonText: 'Start Now'
-    },
-    {
-      id: '2',
-      title: 'Italian Basics',
-      description: 'Learn essential vocabulary and grammar for everyday communication.',
-      modules: '10 modules',
-      duration: '6 weeks',
-      level: 'BEGINNER',
-      buttonText: 'Enroll'
-    },
-    {
-      id: '3',
-      title: 'Financial Planning',
-      description: 'Master the fundamentals of personal finance and investment strategies.',
-      modules: '8 modules',
-      duration: '4 weeks',
-      level: 'BEGINNER',
-      buttonText: 'Explore'
-    }
-  ];
+  // Fetch courses from API
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiService.getCourses();
+        
+        if (response.success && response.data) {
+          setCourses(response.data.courses);
+        } else {
+          setError(response.error || 'Failed to fetch courses');
+        }
+      } catch (err) {
+        setError('An error occurred while fetching courses');
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
   
   // Calculate the max hours for scaling
   const maxHours = Math.max(...weeklyActivity.map(item => item.hours));
+
+  // Update the navigation function to pass the courseId
+  const navigateToCourseDetails = (courseId?: string) => {
+  if (!courseId) {
+    console.warn('No course ID provided for navigation');
+    return;
+  }
+  
+  console.log('Navigating to course:', courseId);
+  router.push({
+    pathname: '/course-details',
+    params: { courseId }
+  });
+}
+
+  // Get course level label
+  const getCourseLevel = (percentage: number) => {
+    if (percentage <= 25) return 'BEGINNER';
+    if (percentage <= 75) return 'INTERMEDIATE';
+    return 'ADVANCED';
+  }
+
+  // Get appropriate button text based on course status
+  const getButtonText = (status: string) => {
+    switch(status) {
+      case 'completed': return 'Review';
+      case 'in_progress': return 'Continue';
+      case 'not_started': return 'Start Now';
+      default: return 'Explore';
+    }
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
@@ -143,12 +173,23 @@ const LearningScreen = () => {
           </View>
           
           {/* Continue Button */}
-          <TouchableOpacity className="bg-[#1E4B88] py-4 rounded-lg items-center">
-            <View className="flex-row items-center">
-              <Icon name="play" size={18} color="white" />
-              <Text className="text-white font-bold text-lg ml-2">Continue Learning</Text>
-            </View>
-          </TouchableOpacity>
+          <TouchableOpacity 
+  className="bg-[#1E4B88] py-4 rounded-lg items-center"
+  onPress={() => {
+    // Find an in-progress course or use the first course
+    const activeCourse = courses.find(c => c.status === 'in_progress');
+    if (activeCourse) {
+      navigateToCourseDetails(activeCourse.course_id);
+    } else if (courses.length > 0) {
+      navigateToCourseDetails(courses[0].course_id);
+    }
+  }}
+>
+  <View className="flex-row items-center">
+    <Icon name="play" size={18} color="white" />
+    <Text className="text-white font-bold text-lg ml-2">Continue Learning</Text>
+  </View>
+</TouchableOpacity>
         </View>
         
         {/* Progress Section */}
@@ -204,7 +245,7 @@ const LearningScreen = () => {
           </View>
         </View>
         
-        {/* Recommended Courses - Added new section */}
+        {/* Recommended Courses - Updated with API data */}
         <View className="mb-8">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-[#1E4B88] text-xl font-bold">Recommended For You</Text>
@@ -213,43 +254,75 @@ const LearningScreen = () => {
             </TouchableOpacity>
           </View>
           
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingRight: 20 }}
-          >
-            {recommendedCourses.map(course => (
-              <View 
-                key={course.id} 
-                className="bg-white rounded-xl shadow-sm mr-4 overflow-hidden"
-                style={{ width: 280 }}
+          {isLoading ? (
+            <View className="py-8 items-center">
+              <ActivityIndicator size="large" color="#1E4B88" />
+              <Text className="mt-2 text-gray-500">Loading courses...</Text>
+            </View>
+          ) : error ? (
+            <View className="py-8 items-center">
+              <Icon name="alert-circle-outline" size={40} color="#FF6B6B" />
+              <Text className="mt-2 text-gray-700">{error}</Text>
+              <TouchableOpacity 
+                className="mt-4 bg-[#1E4B88] px-4 py-2 rounded-lg"
+                onPress={() => setIsLoading(true)} // This will trigger the useEffect again
               >
-                <View className="p-4">
-                  <View className="flex-row justify-between items-center mb-3">
-                    <View className="bg-blue-50 px-3 py-1 rounded-md">
-                      <Text className="text-[#1E4B88] font-medium text-xs">{course.level}</Text>
-                    </View>
-                    <View className="flex-row items-center">
-                      <Icon name="clock-outline" size={14} color="#64748B" />
-                      <Text className="text-gray-500 text-xs ml-1">{course.duration}</Text>
+                <Text className="text-white font-medium">Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingRight: 20 }}
+            >
+              {courses.length > 0 ? (
+                courses.map(course => (
+                  <View 
+                    key={course._id} 
+                    className="bg-white rounded-xl shadow-sm mr-4 overflow-hidden"
+                    style={{ width: 280 }}
+                  >
+                    <View className="p-4">
+                      <View className="flex-row justify-between items-center mb-3">
+                        <View className="bg-blue-50 px-3 py-1 rounded-md">
+                          <Text className="text-[#1E4B88] font-medium text-xs">
+                            {getCourseLevel(course.progress_percentage)}
+                          </Text>
+                        </View>
+                        <View className="flex-row items-center">
+                          <Icon name="translate" size={14} color="#64748B" />
+                          <Text className="text-gray-500 text-xs ml-1">{course.language}</Text>
+                        </View>
+                      </View>
+                      
+                      <Text className="text-gray-800 text-xl font-bold mb-2" numberOfLines={2}>
+                        {course.title}
+                      </Text>
+                      <Text className="text-gray-600 text-sm mb-4" numberOfLines={2}>
+                        {course.topic}
+                      </Text>
+                      
+                      <View className="flex-row justify-between items-center">
+                        <Text className="text-gray-500">{course.modules?.length || course.module_ids.length} modules</Text>
+                        <TouchableOpacity 
+  className="bg-[#1E4B88] py-2 px-4 rounded-lg"
+  onPress={() => navigateToCourseDetails(course.course_id)}
+>
+  <Text className="text-white font-medium">{getButtonText(course.status)}</Text>
+</TouchableOpacity>
+                      </View>
                     </View>
                   </View>
-                  
-                  <Text className="text-gray-800 text-xl font-bold mb-2">{course.title}</Text>
-                  <Text className="text-gray-600 text-sm mb-4" numberOfLines={2}>
-                    {course.description}
-                  </Text>
-                  
-                  <View className="flex-row justify-between items-center">
-                    <Text className="text-gray-500">{course.modules}</Text>
-                    <TouchableOpacity className="bg-[#1E4B88] py-2 px-4 rounded-lg">
-                      <Text className="text-white font-medium">{course.buttonText}</Text>
-                    </TouchableOpacity>
-                  </View>
+                ))
+              ) : (
+                <View className="bg-white rounded-xl shadow-sm mr-4 overflow-hidden p-8 items-center justify-center" style={{ width: 280 }}>
+                  <Icon name="book-outline" size={40} color="#1E4B88" />
+                  <Text className="text-gray-700 mt-4 text-center">No courses available yet</Text>
                 </View>
-              </View>
-            ))}
-          </ScrollView>
+              )}
+            </ScrollView>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

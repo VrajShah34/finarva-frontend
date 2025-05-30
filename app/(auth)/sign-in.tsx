@@ -3,21 +3,19 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { apiService, LoginRequest } from '../services/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type RootStackParamList = {
   SignIn: undefined;
@@ -74,43 +72,45 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
   };
 
   const handleSignIn = async (): Promise<void> => {
-    if (!validateForm()) return;
+    // if (!validateForm()) return;
     
-    setLoading(true);
+    // setLoading(true);
     
-    try {
-      const loginData: LoginRequest = {
-        email: formData.email.toLowerCase().trim(),
-        password: formData.password,
-      };
+    // try {
+    //   const loginData: LoginRequest = {
+    //     email: formData.email.toLowerCase().trim(),
+    //     password: formData.password,
+    //   };
       
-      const response = await apiService.login(loginData);
+    //   const response = await apiService.login(loginData);
       
-      if (response.success && response.data) {
-        // Store user data and token
-        const { token, learner_id, _id } = response.data;
-        await AsyncStorage.setItem('userToken', token);
-        await AsyncStorage.setItem('userId', _id);
-        await AsyncStorage.setItem('learnerId', learner_id);
+    //   if (response.success && response.data) {
+    //     // Store user data and token
+    //     const { token, learner_id, _id } = response.data;
+    //     await AsyncStorage.setItem('userToken', token);
+    //     await AsyncStorage.setItem('userId', _id);
+    //     await AsyncStorage.setItem('learnerId', learner_id);
         
-        Alert.alert(
-          'Success',
-          'Welcome back!',
-          [
-            {
-              text: 'OK',
-              onPress: () => router.navigate('/(tabs)'),
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Sign In Failed', response.error || 'Invalid credentials');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Network error. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    //     Alert.alert(
+    //       'Success',
+    //       'Welcome back!',
+    //       [
+    //         {
+    //           text: 'OK',
+    //           onPress: () => router.navigate('/(tabs)'),
+    //         },
+    //       ]
+    //     );
+    //   } else {
+    //     Alert.alert('Sign In Failed', response.error || 'Invalid credentials');
+    //   }
+    // } catch (error) {
+    //   Alert.alert('Error', 'Network error. Please try again.');
+    // } finally {
+    //   setLoading(false);
+    // }
+
+    router.navigate('/(tabs)');
   };
 
   const updateFormData = (field: string, value: string) => {
