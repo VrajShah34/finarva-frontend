@@ -52,6 +52,7 @@ type AICallData = {
 };
 
 // Updated CustomerLead type to match backend response
+// Updated CustomerLead type to match backend response
 type CustomerLead = {
   id: string;
   _id: string;
@@ -74,6 +75,7 @@ type CustomerLead = {
   createdAt: string;
   updatedAt: string;
   referrer_gp_id: string;
+  isSellable: boolean;
   referrer?: {
     _id: string;
     name: string;
@@ -134,59 +136,7 @@ const determineLeadType = (status: string): 'new' | 'active' | 'ai_processing' =
 };
 
 // Function to format a lead from API to display format
-const formatLeadForDisplay = (lead: any): CustomerLead => {
-  const leadType = determineLeadType(lead.status);
-  
-  // Determine interest score based on interest_level
-  let interestScore;
-  if (lead.interest?.interest_level === 'high') {
-    interestScore = 8;
-  } else if (lead.interest?.interest_level === 'medium') {
-    interestScore = 6;
-  } else if (lead.interest?.interest_level === 'low') {
-    interestScore = 4;
-  }
 
-  // Format product types for display
-  const productType = lead.interest?.products?.map((product: string) => {
-    const formatted = product.replace('_', ' ');
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
-  }).join(', ') || 'Not Specified';
-
-  // Extract tags from data
-  const tags = [];
-  if (lead.interest?.interest_level === 'high') tags.push('High Interest');
-  if (lead.interest?.urgency_level === 'within_month') tags.push('Urgent');
-  if (lead.referrer) tags.push('My Lead');
-
-  // Build initial activities
-  const activities = [];
-  activities.push({
-    description: 'Lead created',
-    date: new Date(lead.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-    icon: 'add-circle',
-    type: 'note',
-  });
-
-  return {
-    ...lead,
-    id: lead._id,
-    leadType,
-    productType,
-    needsRenewal: false,
-    upsellPotential: lead.interest?.interest_level === 'high',
-    lastContact: 'Not contacted yet',
-    dateAdded: new Date(lead.createdAt).toISOString().split('T')[0],
-    tags: tags,
-    activities: activities,
-    interestScore,
-    aiSuggestion: lead.interest?.interest_level === 'high' 
-      ? 'High priority - Schedule follow-up within 24 hours' 
-      : lead.interest?.interest_level === 'medium'
-        ? 'Medium priority - Send product information'
-        : 'Low priority - Add to nurture campaign',
-  };
-};
 
 export default function PostSaleDashboardScreen() {
   const router = useRouter();
@@ -207,7 +157,10 @@ export default function PostSaleDashboardScreen() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [buttonScaleAnim] = useState(new Animated.Value(1));
   const [buttonBgAnim] = useState(new Animated.Value(0));
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current; 
+  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
+const [showSellLeadModal, setShowSellLeadModal] = useState(false);
+const [selectedLeadToSell, setSelectedLeadToSell] = useState<CustomerLead | null>(null);
+  
 
 
 const interpolatedButtonBg = buttonBgAnim.interpolate({
@@ -307,32 +260,52 @@ const interpolatedButtonBg = buttonBgAnim.interpolate({
     }
   };
 
-  // Updated getFilteredLeads function to filter by status directly (case-insensitive)
-  const getFilteredLeads = () => {
-    switch (activeFilter) {
-      case 'New Leads':
-        return customerLeads.filter(lead => lead.status.toLowerCase() === 'new');
-      case 'Active':
-        return customerLeads.filter(lead => lead.status.toLowerCase() === 'active');
-      case 'AI Processing':
-        return customerLeads.filter(lead => lead.status.toLowerCase() === 'ai_processing');
-      case 'Renewal':
-        return customerLeads.filter(lead => lead.needsRenewal);
-      case 'Upsell':
-        return customerLeads.filter(lead => lead.upsellPotential);
-      default:
-        return customerLeads;
-    }
-  };
+ 
+const getFilteredLeads = () => {
+  switch (activeFilter) {
+    case 'New Leads':
+      return customerLeads.filter(lead => lead.status.toLowerCase() === 'new');
+    case 'Active':
+      return customerLeads.filter(lead => lead.status.toLowerCase() === 'active');
+    case 'AI Processing':
+      return customerLeads.filter(lead => lead.status.toLowerCase() === 'ai_processing');
+    case 'Renewal':
+      return customerLeads.filter(lead => lead.needsRenewal);
+    case 'Upsell':
+      return customerLeads.filter(lead => lead.upsellPotential);
+    case 'Purchased':
+      // Only show leads that:
+      // 1. Have isSellable set to true
+      // 2. Have a referrer_gp_id that is NOT the current user's ID
+      return customerLeads.filter(lead => 
+        lead.isSellable && 
+        userProfile && 
+        lead.referrer_gp_id !== userProfile._id
+      );
+    default:
+      return customerLeads;
+  }
+};
 
-  // Update the filter tabs to count by status instead of leadType (case-insensitive)
-  const filterTabs = [
-    { key: 'New Leads', label: 'New Leads', count: customerLeads.filter(l => l.status.toLowerCase() === 'new').length },
-    { key: 'Active', label: 'Active', count: customerLeads.filter(l => l.status.toLowerCase() === 'active').length },
-    { key: 'AI Processing', label: 'AI Processing', count: customerLeads.filter(l => l.status.toLowerCase() === 'ai_processing').length },
-    { key: 'Renewal', label: 'Renewals', count: customerLeads.filter(l => l.needsRenewal).length },
-    { key: 'Upsell', label: 'Upsell', count: customerLeads.filter(l => l.upsellPotential).length },
-  ];
+
+
+const filterTabs = [
+  { key: 'New Leads', label: 'New Leads', count: customerLeads.filter(l => l.status.toLowerCase() === 'new').length },
+  { 
+    key: 'Purchased', 
+    label: 'Purchased', 
+    count: customerLeads.filter(l => 
+      l.isSellable && 
+      userProfile && 
+      l.referrer_gp_id !== userProfile._id
+    ).length 
+  },
+  { key: 'Active', label: 'Active', count: customerLeads.filter(l => l.status.toLowerCase() === 'active').length },
+  { key: 'AI Processing', label: 'AI Processing', count: customerLeads.filter(l => l.status.toLowerCase() === 'ai_processing').length },
+  { key: 'Renewal', label: 'Renewals', count: customerLeads.filter(l => l.needsRenewal).length },
+  { key: 'Upsell', label: 'Upsell', count: customerLeads.filter(l => l.upsellPotential).length },
+  
+];
 
   const showAICallBottomSheet = () => {
     setShowAICallModal(true);
@@ -498,91 +471,141 @@ const interpolatedButtonBg = buttonBgAnim.interpolate({
 
     setProcessingAICalls(true);
 
-    // Update leads to AI processing status
-    setCustomerLeads(prev =>
-      prev.map(lead => {
-        if (selectedLeadsForAI.some(selected => selected.id === lead.id)) {
-          return {
-            ...lead,
-            leadType: 'ai_processing',
-            status: 'ai_processing',
-            activities: [
-              ...(lead.activities || []),
-              {
-                description: 'AI call scheduled',
-                date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-                icon: 'call',
-                type: 'ai_call',
-              },
-            ],
-          };
-        }
-        return lead;
-      })
-    );
+    try {
+      // Prepare the data for the bulk-call API
+      const callToData = selectedLeadsForAI.map(lead => ({
+        id: lead.id,
+        phonenumber: lead.contact.phone
+      }));
 
-    // Simulate AI call processing
-    setTimeout(() => {
+      const bulkCallPayload = {
+        call_to: callToData,
+        additional_info: aiCallPrompt || "Standard lead qualification call"
+      };
+
+      // Call the API method from the service
+      const response = await apiService.scheduleBulkAICalls(bulkCallPayload);
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to schedule AI calls');
+      }
+
+      // Update leads to AI processing status
       setCustomerLeads(prev =>
         prev.map(lead => {
           if (selectedLeadsForAI.some(selected => selected.id === lead.id)) {
-            const mockAIData: AICallData = {
-              contact: {
-                name: lead.contact.name,
-                phone: lead.contact.phone || '',
-                email: lead.contact.email,
-                age: lead.contact.age || Math.floor(Math.random() * 40) + 25,
-                region: lead.contact.region || ['North', 'South', 'East', 'West'][Math.floor(Math.random() * 4)],
-                preferred_language: lead.contact.preferred_language || 'English',
-              },
-              interest: {
-                products: lead.interest?.products || ['insurance'],
-                interest_level: lead.interest?.interest_level || 'medium' as 'low' | 'medium' | 'high',
-                budget_range: lead.interest?.budget_range || '100000-200000',
-                urgency_level: lead.interest?.urgency_level === 'within_month' ? 'within_month' : 'within_year',
-              },
-              notes: lead.notes || `Interested in ${lead.interest?.products?.map(p => p.replace('_', ' ')).join(', ') || 'insurance products'}.`,
-            };
-
             return {
               ...lead,
-              leadType: 'active',
-              status: 'active',
-              aiCallData: mockAIData,
-              interestScore: mockAIData.interest.interest_level === 'high' ? 8 : mockAIData.interest.interest_level === 'medium' ? 6 : 4,
-              lastContact: 'AI call completed',
+              leadType: 'ai_processing',
+              status: 'ai_processing',
               activities: [
                 ...(lead.activities || []),
                 {
-                  description: 'AI call completed successfully',
+                  description: 'AI call scheduled',
                   date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-                  icon: 'checkmark-circle',
+                  icon: 'call',
                   type: 'ai_call',
                 },
               ],
-              aiSuggestion: mockAIData.interest.interest_level === 'high' ? 'High priority - Schedule follow-up within 24 hours' : 'Medium priority - Send product information',
             };
           }
           return lead;
         })
       );
 
-      setProcessingAICalls(false);
+      // Hide the modal and show success message
       hideAICallBottomSheet();
-
+      
       Alert.alert(
-        'AI Calls Completed! 🎉',
-        `Successfully processed ${selectedLeadsForAI.length} leads. Check the analysis in your Active leads tab.`,
+        'AI Calls Scheduled! 🎉',
+        `Successfully scheduled ${selectedLeadsForAI.length} AI calls. You'll see results in the AI Processing tab.`,
         [
           {
-            text: 'View Analysis',
-            onPress: () => setActiveFilter('Active'),
+            text: 'View Status',
+            onPress: () => setActiveFilter('AI Processing'),
           },
           { text: 'OK' },
         ]
       );
-    }, 3000);
+    } catch (error) {
+      console.error('Error scheduling AI calls:', error);
+      Alert.alert(
+        'Error',
+        'Failed to schedule AI calls. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setProcessingAICalls(false);
+    }
   };
+
+  const formatLeadForDisplay = (lead: any): CustomerLead => {
+  const leadType = determineLeadType(lead.status);
+  
+  // Determine interest score based on interest_level
+  let interestScore;
+  if (lead.interest?.interest_level === 'high') {
+    interestScore = 8;
+  } else if (lead.interest?.interest_level === 'medium') {
+    interestScore = 6;
+  } else if (lead.interest?.interest_level === 'low') {
+    interestScore = 4;
+  }
+
+  // Format product types for display
+  const productType = lead.interest?.products?.map((product: string) => {
+    const formatted = product.replace('_', ' ');
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }).join(', ') || 'Not Specified';
+
+  // Extract tags from data
+  // Update the formatLeadForDisplay function's tags assignment
+// Extract tags from data
+const tags = [];
+if (lead.interest?.interest_level === 'high') tags.push('High Interest');
+if (lead.interest?.urgency_level === 'within_month') tags.push('Urgent');
+
+// Update how we determine if a lead is "My Lead" or "Purchased"
+if (lead.isSellable) {
+  if (userProfile && lead.referrer_gp_id === userProfile._id) {
+    // This is my lead that I've put up for sale
+    tags.push('For Sale');
+  } else {
+    // This is a lead I've purchased from someone else
+    tags.push('Purchased');
+  }
+} else if (lead.referrer) {
+  tags.push('My Lead');
+}
+
+  // Build initial activities
+  const activities = [];
+  activities.push({
+    description: 'Lead created',
+    date: new Date(lead.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+    icon: 'add-circle',
+    type: 'note',
+  });
+
+  return {
+    ...lead,
+    id: lead._id,
+    leadType,
+    productType,
+    needsRenewal: false,
+    upsellPotential: lead.interest?.interest_level === 'high',
+    lastContact: 'Not contacted yet',
+    dateAdded: new Date(lead.createdAt).toISOString().split('T')[0],
+    tags: tags,
+    activities: activities,
+    interestScore,
+    aiSuggestion: lead.interest?.interest_level === 'high' 
+      ? 'High priority - Schedule follow-up within 24 hours' 
+      : lead.interest?.interest_level === 'medium'
+        ? 'Medium priority - Send product information'
+        : 'Low priority - Add to nurture campaign',
+  };
+};
 
   const addActivity = (leadId: string, activity: Omit<NonNullable<CustomerLead['activities']>[number], 'date'>) => {
     setCustomerLeads(prev =>
@@ -685,6 +708,42 @@ const interpolatedButtonBg = buttonBgAnim.interpolate({
       </SafeAreaView>
     );
   }
+
+  // Add this function to handle the API call
+const sellLead = async (leadId: string) => {
+  try {
+    const response = await apiService.modifyLead(leadId, {
+      isSellable: true
+    });
+
+    if (response.success) {
+      // Update the lead in the local state
+      setCustomerLeads(prev => 
+        prev.map(lead => {
+          if (lead.id === leadId) {
+            return {
+              ...lead,
+              isSellable: true,
+              tags: [...(lead.tags?.filter(tag => tag !== 'My Lead') || []), 'Purchased']
+            };
+          }
+          return lead;
+        })
+      );
+      
+      // Show success message
+      Alert.alert('Success', 'Your lead is now available for sale');
+    } else {
+      Alert.alert('Error', 'Failed to sell lead. Please try again.');
+    }
+  } catch (error) {
+    console.error('Error selling lead:', error);
+    Alert.alert('Error', 'An error occurred while trying to sell this lead');
+  } finally {
+    setShowSellLeadModal(false);
+    setSelectedLeadToSell(null);
+  }
+};
 
   return (
     <>
@@ -960,10 +1019,10 @@ const interpolatedButtonBg = buttonBgAnim.interpolate({
                       </Text>
                     </View>
                     {customer.tags && customer.tags.map((tag, index) => (
-                      <View key={index} className="bg-gray-100 px-2 py-1 rounded-full mt-1">
-                        <Text className="text-xs text-gray-600">{tag}</Text>
-                      </View>
-                    ))}
+  <View key={index} className={`${tag === 'Purchased' ? 'bg-violet-100' : 'bg-gray-100'} px-2 py-1 rounded-full mt-1`}>
+    <Text className={`text-xs ${tag === 'Purchased' ? 'text-violet-600 font-medium' : 'text-gray-600'}`}>{tag}</Text>
+  </View>
+))}
                   </View>
                 </View>
 
@@ -1152,12 +1211,29 @@ const interpolatedButtonBg = buttonBgAnim.interpolate({
                       Call
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity className="flex-1 flex-row items-center justify-center py-3 ml-1">
-                    <Ionicons name="add-circle-outline" size={18} color={primaryColor} />
-                    <Text style={{ color: primaryColor }} className="font-medium ml-1 text-sm">
-                      Note
-                    </Text>
-                  </TouchableOpacity>
+                  
+                  {/* Replace Note button with Sell Lead button if not purchased */}
+                  {!customer.isSellable ? (
+                    <TouchableOpacity 
+                      className="flex-1 flex-row items-center justify-center py-3 ml-1"
+                      onPress={() => {
+                        setSelectedLeadToSell(customer);
+                        setShowSellLeadModal(true);
+                      }}
+                    >
+                      <Ionicons name="cash-outline" size={18} color={primaryColor} />
+                      <Text style={{ color: primaryColor }} className="font-medium ml-1 text-sm">
+                        Sell Lead
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View className="flex-1 flex-row items-center justify-center py-3 ml-1 opacity-70">
+                      <Ionicons name="checkmark-circle" size={18} color={primaryColor} />
+                      <Text style={{ color: primaryColor }} className="font-medium ml-1 text-sm">
+                        Sold
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
               </View>
@@ -1313,6 +1389,53 @@ const interpolatedButtonBg = buttonBgAnim.interpolate({
             </Animated.View>
           </View>
         </Modal>
+
+        {/* Sell Lead Confirmation Modal */}
+<Modal visible={showSellLeadModal} transparent animationType="fade">
+  <View className="flex-1 bg-black bg-opacity-50 justify-center items-center p-4">
+    <View className="bg-white rounded-xl w-full max-w-sm p-5 shadow-xl">
+      <View className="items-center mb-4">
+        <View className="w-16 h-16 bg-primary bg-opacity-20 rounded-full items-center justify-center mb-3">
+          <Ionicons name="cash" size={32} color={primaryColor} />
+        </View>
+        <Text className="text-xl font-bold text-gray-800">Sell This Lead?</Text>
+      </View>
+      
+      <Text className="text-gray-600 text-center mb-5">
+        This lead will be listed for sale in the marketplace. You'll earn commission when another agent purchases it.
+      </Text>
+
+      {selectedLeadToSell && (
+        <View className="bg-gray-100 p-3 rounded-lg mb-4">
+          <Text className="font-bold text-gray-800">{selectedLeadToSell.contact.name}</Text>
+          <Text className="text-gray-600">{selectedLeadToSell.contact.phone}</Text>
+          <Text className="text-gray-500 text-sm mt-1">
+            {selectedLeadToSell.productType || selectedLeadToSell.interest?.products?.join(', ')}
+          </Text>
+        </View>
+      )}
+      
+      <View className="flex-row justify-between mt-2">
+        <TouchableOpacity 
+          className="flex-1 py-3 bg-gray-200 rounded-lg mr-2" 
+          onPress={() => {
+            setShowSellLeadModal(false);
+            setSelectedLeadToSell(null);
+          }}
+        >
+          <Text className="text-gray-700 font-medium text-center">Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          className="flex-1 py-3 bg-primary rounded-lg ml-2 flex-row justify-center items-center" 
+          onPress={() => selectedLeadToSell && sellLead(selectedLeadToSell.id)}
+        >
+          <Ionicons name="checkmark-circle" size={18} color="white" className="mr-1" />
+          <Text className="text-white font-medium text-center ml-1">Confirm Sale</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
       </SafeAreaView>
     </>
   );

@@ -1,20 +1,20 @@
 // app/(app)/module/resources.tsx
 
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  SafeAreaView,
+  Alert,
+  Linking,
+  Platform,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
   View,
-  Linking,
-  Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { apiService } from '../services/api';
-import { ModuleDetailsResponse } from '../services/api';
+import { apiService, ModuleDetailsResponse } from '../services/api';
 
 const ResourcesScreen = () => {
   const { moduleId, contentType } = useLocalSearchParams();
@@ -243,7 +243,7 @@ const ResourcesScreen = () => {
 
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-white p-3">
         <View className="flex-1 justify-center items-center p-4">
           <Icon name="alert-circle" size={48} color="#E74C3C" />
           <Text className="text-red-600 text-center mb-4 text-lg">{error}</Text>
@@ -262,8 +262,16 @@ const ResourcesScreen = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <>
+            <StatusBar 
+              backgroundColor="white" 
+              barStyle="light-content" 
+              translucent={Platform.OS === 'android'}
+            />
+            <SafeAreaView 
+              edges={['right', 'left','top']}
+              style={{ flex: 1, backgroundColor: "white" }}
+            >
       
       {/* Header */}
       <View className="px-4 py-3 flex-row justify-between items-center border-b border-gray-200">
@@ -452,7 +460,7 @@ const ResourcesScreen = () => {
       </ScrollView>
 
       {/* Bottom navigation */}
-      <View className="px-4 py-4 border-t border-gray-200 bg-white">
+      <View className="px-4 py-4 pb-6 border-t border-gray-200 bg-white">
         <View className="flex-row justify-between items-center">
           <TouchableOpacity 
             className="bg-gray-100 px-4 py-2 rounded-lg"
@@ -474,6 +482,7 @@ const ResourcesScreen = () => {
         </View>
       </View>
     </SafeAreaView>
+    </>
   );
 };
 

@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  SafeAreaView,
+  Platform,
   ScrollView,
   StatusBar,
   Text,
@@ -10,6 +10,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Audio } from 'expo-av';
 import { apiService, ModuleDetailsResponse } from '../services/api';

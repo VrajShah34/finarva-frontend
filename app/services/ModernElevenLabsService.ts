@@ -1,5 +1,4 @@
 // ModernElevenLabsService.ts
-import { Platform } from 'react-native';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 
@@ -27,7 +26,7 @@ interface PlaybackStatus {
 }
 
 const VOICE_IDS = {
-  kavita_insurance: 's6cZdgI3j07hf4frz4Q8',
+  kavita_insurance: 'NaKPQmdr7mMxXuXrNeFC',
   hindi_teacher: 'pNInz6obpgDQGcFmaJgB',
   friendly_assistant: 'ErXwobaYiN019PkySvjV',
   sales_agent: 'VR6AewLTigWG4xSOukaG',
@@ -258,7 +257,7 @@ export class ModernElevenLabsService {
   // Get available voices for a role
   static getVoicesForRole(roleName: string): string[] {
     const roleVoices: { [key: string]: string[] } = {
-      'kavita_insurance': ['s6cZdgI3j07hf4frz4Q8'], // Warm female
+      'kavita_insurance': ['NaKPQmdr7mMxXuXrNeFC'], // Warm female
       'hindi_teacher': ['pNInz6obpgDQGcFmaJgB'], // Clear female
       'friendly_assistant': ['ErXwobaYiN019PkySvjV'], // Friendly female
       'sales_agent': ['VR6AewLTigWG4xSOukaG'], // Confident male

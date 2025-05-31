@@ -273,6 +273,31 @@ export interface CaseStudySubmissionResponse {
   language: string;
 }
 
+/**
+ * Interface for bulk call request payload
+ */
+export interface BulkCallRequest {
+  call_to: {
+    id: string;
+    phonenumber: string;
+  }[];
+  additional_info: string;
+}
+
+/**
+ * Interface for bulk call response
+ */
+export interface BulkCallResponse {
+  success: boolean;
+  message: string;
+  calls: {
+    id: string;
+    status: string;
+    call_id?: string;
+    error?: string;
+  }[];
+}
+
 class ApiService {
   private async getAuthToken(): Promise<string | null> {
     try {
@@ -282,6 +307,26 @@ class ApiService {
       console.error('Error getting auth token:', error);
       return null;
     }
+  }
+
+  private getAuthHeaders(): Record<string, string> {
+    // Create empty headers object
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Try to get token synchronously
+    try {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      const token = AsyncStorage.getItem('userToken');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Error getting auth headers:', error);
+    }
+    
+    return headers;
   }
 
   private async makeRequest<T>(
@@ -534,6 +579,53 @@ async getLeads(): Promise<ApiResponse<any>> {
       method: 'POST',
       body: JSON.stringify({ selected_option: selectedOption }),
     }, true);
+}
+
+async modifyLead(leadId: string, data: any): Promise<ApiResponse<any>> {
+  return this.makeRequest('/api', `/leads/${leadId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }, true);
+}
+
+
+
+/**
+ * Schedules bulk AI calls for multiple leads
+ * @param callData - The bulk call request data
+ * @returns A promise with the API response
+ */
+async scheduleBulkAICalls(callData: BulkCallRequest): Promise<ApiResponse<BulkCallResponse>> {
+  try {
+    const response = await fetch('http://localhost:8000/bulk-call', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders(),
+      },
+      body: JSON.stringify(callData),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.message || 'Failed to schedule AI calls',
+      };
+    }
+    
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    console.error('Error scheduling bulk AI calls:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
 }
 }
 

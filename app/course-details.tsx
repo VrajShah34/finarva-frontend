@@ -267,39 +267,39 @@ const CourseDetailsScreen = () => {
         {/* Resume Course Section - Show if there's an in-progress module */}
         {courseDetails.modules.some(m => m.progress && m.progress.status === 'in_progress') && (
           <>
-            <View className="px-5 py-4 flex-row items-center justify-between">
+            <View className="px-5 py-4">
               <View className="flex-row items-center">
                 <View className="w-12 h-12 rounded-full bg-[#1E4B88] items-center justify-center">
                   <Icon name="play" size={24} color="white" />
                 </View>
-                <View className="ml-3">
+                <View className="ml-3 flex-1">
                   <Text className="text-[#1E4B88] text-lg font-medium">Resume Course</Text>
-                  <Text className="text-gray-500">
+                  <Text className="text-gray-500 flex-shrink" numberOfLines={2}>
                     {courseDetails.modules.find(m => m.progress && m.progress.status === 'in_progress')?.title || 'Next Module'}
                   </Text>
                 </View>
               </View>
               
               <TouchableOpacity 
-                className="bg-[#4DF0A9] px-6 py-3 rounded-full"
+                className="bg-[#4DF0A9] px-6 py-3 rounded-full mt-3 self-start"
                 onPress={() => {
-                // Find the first in-progress module
-                const inProgressModule = courseDetails.modules.find(m => 
-                  m.progress && m.progress.status === 'in_progress'
-                );
-                
-                if (inProgressModule) {
-                  // Navigate to the appropriate content type
-                  const contentTypes = ['content_viewed', 'video_watched', 'resources_accessed', 'case_completed'];
+                  // Find the first in-progress module
+                  const inProgressModule = courseDetails.modules.find(m => 
+                    m.progress && m.progress.status === 'in_progress'
+                  );
                   
-                  // Find the first incomplete content type
-                  const nextContentType = contentTypes.find(type => 
-                    !isContentTypeCompleted(inProgressModule, type)
-                  ) || 'content_viewed';
-                  
-                  navigateToModuleContent(inProgressModule, nextContentType);
-                }
-              }}
+                  if (inProgressModule) {
+                    // Navigate to the appropriate content type
+                    const contentTypes = ['content_viewed', 'video_watched', 'resources_accessed', 'case_completed'];
+                    
+                    // Find the first incomplete content type
+                    const nextContentType = contentTypes.find(type => 
+                      !isContentTypeCompleted(inProgressModule, type)
+                    ) || 'content_viewed';
+                    
+                    navigateToModuleContent(inProgressModule, nextContentType);
+                  }
+                }}
               >
                 <Text className="text-[#1E4B88] font-bold">Continue</Text>
               </TouchableOpacity>
@@ -511,12 +511,11 @@ const CourseDetailsScreen = () => {
                           </View>
                         </View>
                         <TouchableOpacity 
-                          className={`${isContentTypeCompleted(module, 'video_watched') ? 'bg-[#4DF0A9]' : isContentTypeCompleted(module, 'content_viewed') ? 'bg-[#1E4B88]' : 'bg-gray-300'} py-2 rounded-lg items-center mt-1`}
-                          disabled={!isContentTypeCompleted(module, 'content_viewed') && !isContentTypeCompleted(module, 'video_watched')}
+                          className={`${isContentTypeCompleted(module, 'case_submitted') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
                           onPress={() => navigateToModuleContent(module, 'video_watched')}
                         >
-                          <Text className={`${isContentTypeCompleted(module, 'content_viewed') || isContentTypeCompleted(module, 'video_watched') ? 'text-white' : 'text-gray-500'} font-bold`}>
-                            {isContentTypeCompleted(module, 'video_watched') ? 'Review' : isContentTypeCompleted(module, 'content_viewed') ? 'Start' : 'Locked'}
+                          <Text className="text-white font-bold">
+                            {isContentTypeCompleted(module, 'case_submitted') ? 'Review' : 'Start'}
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -542,12 +541,11 @@ const CourseDetailsScreen = () => {
                           </View>
                         </View>
                         <TouchableOpacity 
-                          className={`${isContentTypeCompleted(module, 'resources_accessed') ? 'bg-[#4DF0A9]' : (isContentTypeCompleted(module, 'video_watched') || !module.video_url) && isContentTypeCompleted(module, 'content_viewed') ? 'bg-[#1E4B88]' : 'bg-gray-300'} py-2 rounded-lg items-center mt-1`}
-                          disabled={!(isContentTypeCompleted(module, 'video_watched') || !module.video_url) && !isContentTypeCompleted(module, 'content_viewed') && !isContentTypeCompleted(module, 'resources_accessed')}
+                          className={`${isContentTypeCompleted(module, 'case_submitted') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
                           onPress={() => navigateToModuleContent(module, 'resources_accessed')}
                         >
-                          <Text className={`${isContentTypeCompleted(module, 'resources_accessed') || ((isContentTypeCompleted(module, 'video_watched') || !module.video_url) && isContentTypeCompleted(module, 'content_viewed')) ? 'text-white' : 'text-gray-500'} font-bold`}>
-                            {isContentTypeCompleted(module, 'resources_accessed') ? 'Review' : ((isContentTypeCompleted(module, 'video_watched') || !module.video_url) && isContentTypeCompleted(module, 'content_viewed')) ? 'Start' : 'Locked'}
+                          <Text className="text-white font-bold">
+                            {isContentTypeCompleted(module, 'case_submitted') ? 'Review' : 'Start'}
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -557,11 +555,11 @@ const CourseDetailsScreen = () => {
                     {module.case_scenario && (
                       <View className="mb-1 bg-white rounded-lg p-3 shadow-sm">
                         <View className="flex-row items-center mb-2">
-                          <View className={`w-12 h-12 rounded-full ${isContentTypeCompleted(module, 'case_completed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center mr-3`}>
+                          <View className={`w-12 h-12 rounded-full ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center mr-3`}>
                             <Icon 
                               name="notebook" 
                               size={24} 
-                              color={isContentTypeCompleted(module, 'case_completed') ? "white" : "#64748B"} 
+                              color={isContentTypeCompleted(module, 'chatbot_completed') ? "white" : "#64748B"} 
                             />
                           </View>
                           <View className="flex-1">
@@ -575,12 +573,11 @@ const CourseDetailsScreen = () => {
                           </View>
                         </View>
                         <TouchableOpacity 
-                          className={`${isContentTypeCompleted(module, 'case_completed') ? 'bg-[#4DF0A9]' : isContentTypeCompleted(module, 'resources_accessed') || (!module.external_resources || module.external_resources.length === 0) && (isContentTypeCompleted(module, 'video_watched') || !module.video_url) && isContentTypeCompleted(module, 'content_viewed') ? 'bg-[#1E4B88]' : 'bg-gray-300'} py-2 rounded-lg items-center mt-1`}
-                          disabled={!(isContentTypeCompleted(module, 'resources_accessed') || (!module.external_resources || module.external_resources.length === 0)) && !(isContentTypeCompleted(module, 'video_watched') || !module.video_url) && !isContentTypeCompleted(module, 'content_viewed') && !isContentTypeCompleted(module, 'case_completed')}
+                          className={`${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
                           onPress={() => navigateToModuleContent(module, 'case_completed')}
                         >
-                          <Text className={`${isContentTypeCompleted(module, 'case_completed') || isContentTypeCompleted(module, 'resources_accessed') || (!module.external_resources || module.external_resources.length === 0) && (isContentTypeCompleted(module, 'video_watched') || !module.video_url) && isContentTypeCompleted(module, 'content_viewed') ? 'text-white' : 'text-gray-500'} font-bold`}>
-                            {isContentTypeCompleted(module, 'case_completed') ? 'Review' : (isContentTypeCompleted(module, 'resources_accessed') || (!module.external_resources || module.external_resources.length === 0) && (isContentTypeCompleted(module, 'video_watched') || !module.video_url) && isContentTypeCompleted(module, 'content_viewed')) ? 'Start' : 'Locked'}
+                          <Text className="text-white font-bold">
+                            {isContentTypeCompleted(module, 'chatbot_completed') ? 'Review' : 'Start'}
                           </Text>
                         </TouchableOpacity>
                       </View>
