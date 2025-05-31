@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
+  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -21,6 +22,7 @@ const LearningScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Mock data for weekly activity
   const weeklyActivity = [
@@ -34,47 +36,62 @@ const LearningScreen = () => {
   ];
   
   // Fetch user profile
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setProfileLoading(true);
-        const response = await apiService.getProfile();
-        
-        if (response.success && response.data) {
-          setProfile(response.data.gp);
-        } else {
-          console.error('Failed to fetch profile:', response.error);
-        }
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-      } finally {
-        setProfileLoading(false);
+  const fetchProfile = async () => {
+    try {
+      setProfileLoading(true);
+      const response = await apiService.getProfile();
+      
+      if (response.success && response.data) {
+        setProfile(response.data.gp);
+      } else {
+        console.error('Failed to fetch profile:', response.error);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+  
+  // Fetch courses from API
+  const fetchCourses = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiService.getCourses();
+      
+      if (response.success && response.data) {
+        setCourses(response.data.courses);
+      } else {
+        setError(response.error || 'Failed to fetch courses');
+      }
+    } catch (err) {
+      setError('An error occurred while fetching courses');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  // Handle refresh action
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setError(null);
+    
+    try {
+      // Fetch both profile and courses in parallel
+      await Promise.all([fetchProfile(), fetchCourses()]);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
     fetchProfile();
   }, []);
   
-  // Fetch courses from API
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        setIsLoading(true);
-        const response = await apiService.getCourses();
-        
-        if (response.success && response.data) {
-          setCourses(response.data.courses);
-        } else {
-          setError(response.error || 'Failed to fetch courses');
-        }
-      } catch (err) {
-        setError('An error occurred while fetching courses');
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchCourses();
   }, []);
   
@@ -146,7 +163,26 @@ const LearningScreen = () => {
         </View>
         </View>
       <View className='flex-1 bg-gray-50'>
-      <ScrollView className="flex-1 px-5">
+      <ScrollView 
+        className="flex-1 px-5"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[primaryColor, '#4DF0A9']}
+            tintColor={primaryColor}
+            title="Pull to refresh"
+            titleColor="#888888"
+          />
+        }
+      >
+        {/* Refreshing indicator when pulling */}
+        {refreshing && (
+          <View className="py-2 items-center">
+            <Text className="text-gray-500 text-sm">Updating your courses...</Text>
+          </View>
+        )}
+        
         {/* Greeting */}
         <View className="mt-6 mb-2">
           <Text className="text-[#1E4B88] text-2xl font-bold">
@@ -168,7 +204,7 @@ const LearningScreen = () => {
     <Text className="mt-2 text-gray-700 text-center">Couldn't load your active course</Text>
     <TouchableOpacity 
       className="mt-4 bg-[#1E4B88] px-4 py-2 rounded-lg"
-      onPress={() => setIsLoading(true)}
+      onPress={onRefresh}
     >
       <Text className="text-white font-medium">Retry</Text>
     </TouchableOpacity>
@@ -354,7 +390,7 @@ const LearningScreen = () => {
               <Text className="mt-2 text-gray-700">{error}</Text>
               <TouchableOpacity 
                 className="mt-4 bg-[#1E4B88] px-4 py-2 rounded-lg"
-                onPress={() => setIsLoading(true)} // This will trigger the useEffect again
+                onPress={onRefresh}
               >
                 <Text className="text-white font-medium">Retry</Text>
               </TouchableOpacity>

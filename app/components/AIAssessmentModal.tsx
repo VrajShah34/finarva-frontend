@@ -481,17 +481,7 @@ const handleSendResponse = async () => {
                   </Text>
                 </View>
                 
-                <TouchableOpacity
-                  className="w-12 h-12 bg-[#4DF0A9] rounded-full items-center justify-center mr-2"
-                  onPress={handleToggleRecording}
-                  disabled={isAIThinking}
-                >
-                  <Icon 
-                    name={isRecording ? "stop" : "microphone"} 
-                    size={24} 
-                    color="#1E4B88" 
-                  />
-                </TouchableOpacity>
+                
                 
                 <TouchableOpacity
                   className={`w-12 h-12 rounded-full items-center justify-center ${
@@ -510,15 +500,7 @@ const handleSendResponse = async () => {
                 </TouchableOpacity>
               </View>
 
-              {/* Voice Recording Indicator */}
-              {isRecording && (
-                <View className="mt-3 items-center">
-                  <Text className="text-gray-600 text-sm mb-2">Recording...</Text>
-                  <View className="flex-row items-center">
-                    {renderVoiceWave()}
-                  </View>
-                </View>
-              )}
+              
             </View>
           )}
 

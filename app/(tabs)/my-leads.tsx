@@ -284,15 +284,7 @@ const getFilteredLeads = () => {
       return customerLeads.filter(lead => lead.needsRenewal);
     case 'Upsell':
       return customerLeads.filter(lead => lead.upsellPotential);
-    case 'Purchased':
-      // Only show leads that:
-      // 1. Have isSellable set to true
-      // 2. Have a referrer_gp_id that is NOT the current user's ID
-      return customerLeads.filter(lead => 
-        lead.isSellable && 
-        userProfile && 
-        lead.referrer_gp_id !== userProfile._id
-      );
+   
     default:
       return customerLeads;
   }
@@ -302,15 +294,6 @@ const getFilteredLeads = () => {
 
 const filterTabs = [
   { key: 'New Leads', label: 'New Leads', count: customerLeads.filter(l => l.status.toLowerCase() === 'new').length },
-  { 
-    key: 'Purchased', 
-    label: 'Purchased', 
-    count: customerLeads.filter(l => 
-      l.isSellable && 
-      userProfile && 
-      l.referrer_gp_id !== userProfile._id
-    ).length 
-  },
   { key: 'Active', label: 'Active', count: customerLeads.filter(l => l.status.toLowerCase() === 'active').length },
   { key: 'AI Processing', label: 'AI Processing', count: customerLeads.filter(l => l.status.toLowerCase() === 'ai_processing').length },
   { key: 'Renewal', label: 'Renewals', count: customerLeads.filter(l => l.needsRenewal).length },
@@ -795,6 +778,12 @@ const sellLead = async (leadId: string) => {
       {/* Header */}
       <View className="bg-primary py-5 px-4 flex-row justify-between items-center">
         <Text className="text-white text-2xl font-bold">Gromo+</Text>
+        <View className="flex-row items-center bg-white bg-opacity-20 px-3 py-1.5 rounded-full">
+                    <Text style={{ color: "#FFD700", fontSize: 22 }}>🪙</Text>
+                    <Text className="text-primary text-xl font-bold ml-2">
+                      {userProfile?.wallet_balance || 0}
+                    </Text>
+                  </View>
        
       </View>
         

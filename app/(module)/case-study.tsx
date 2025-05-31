@@ -128,7 +128,6 @@ const handleAIAssessmentComplete = async (data?: { feedback: string; score: numb
           console.error('❌ Failed to add coins:', coinsResponse.error);
         }
         
-        // Immediate redirect to course details page
         setTimeout(() => {
           if (moduleData?.module?.course_id) {
             router.replace({
@@ -138,7 +137,7 @@ const handleAIAssessmentComplete = async (data?: { feedback: string; score: numb
           } else {
             router.back();
           }
-        }, 1500); // Reduced delay since everything is instant now
+        }, 500); 
       } else {
         console.error('Failed to complete module:', response.error);
         setTimeout(() => router.back(), 2000);
@@ -322,20 +321,7 @@ const handleAIAssessmentComplete = async (data?: { feedback: string; score: numb
                 {submitLoading ? 'Submitting...' : 'Submit Answer'}
               </Text>
             </TouchableOpacity>
-            <View className="items-center">
-              <Text className="text-gray-600 text-sm mb-2">Confidence</Text>
-              <View className="flex-row items-center">
-                {[1, 2, 3, 4, 5].map((level) => (
-                  <TouchableOpacity
-                    key={level}
-                    className={`w-6 h-6 rounded-full mx-1 ${
-                      level <= confidence ? 'bg-[#4DF0A9]' : 'bg-gray-200'
-                    }`}
-                    onPress={() => setConfidence(level)}
-                  />
-                ))}
-              </View>
-            </View>
+           
           </>
         ) : !completionData && (
           <TouchableOpacity 

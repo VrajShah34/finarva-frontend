@@ -197,7 +197,7 @@ export default function HomeScreen() {
           
           <View className="flex-row items-center bg-white bg-opacity-20 px-3 py-1.5 rounded-full">
             <Text style={{ color: "#FFD700", fontSize: 22 }}>🪙</Text>
-            <Text className="text-white text-xl font-bold ml-2">
+            <Text className="text-primary text-xl font-bold ml-2">
               {profile?.wallet_balance || 0}
             </Text>
           </View>
