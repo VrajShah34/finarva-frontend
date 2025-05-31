@@ -1,5 +1,5 @@
 // services/api.ts
-const SERVER_BASE = 'http://192.168.76.89:5000';
+const SERVER_BASE = 'http://192.168.16.66:5000';
 const API_PATHS = {
   GP: '/api/gp',
   LMS: '/api/lms',
