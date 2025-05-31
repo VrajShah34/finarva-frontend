@@ -132,12 +132,18 @@ const LearningScreen = () => {
           >
       
       {/* Header */}
-      <View style={{ backgroundColor: primaryColor }} className="py-5 px-4 flex-row justify-between items-center">
+
+        <View style={{ backgroundColor: primaryColor }} className="py-5 px-4 flex-row justify-between items-center">
           <View className="flex-row items-center">
-            
             <Text className="text-white text-2xl font-bold">Gromo+</Text>
           </View>
           
+        <View className="flex-row items-center bg-white bg-opacity-20 px-3 py-1.5 rounded-full">
+          <Text style={{ color: "#FFD700", fontSize: 22 }}>🪙</Text>
+          <Text className="text-primary text-xl font-bold ml-2">
+            {profileLoading ? '...' : profile?.wallet_balance || 0}
+          </Text>
+        </View>
         </View>
       <View className='flex-1 bg-gray-50'>
       <ScrollView className="flex-1 px-5">

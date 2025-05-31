@@ -51,6 +51,17 @@ type AICallData = {
   notes: string;
 };
 
+// Interface for bulk AI call request payload
+type BulkCallRequest = {
+  call_to: {
+    id: string;
+    name: string;
+    phonenumber: string;
+  }[];
+  name: string;
+  additional_info?: string;
+};
+
 // Updated CustomerLead type to match backend response
 // Updated CustomerLead type to match backend response
 type CustomerLead = {
@@ -160,8 +171,8 @@ export default function PostSaleDashboardScreen() {
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
 const [showSellLeadModal, setShowSellLeadModal] = useState(false);
 const [selectedLeadToSell, setSelectedLeadToSell] = useState<CustomerLead | null>(null);
+const [campaignName, setCampaignName] = useState<string>('');
   
-
 
 const interpolatedButtonBg = buttonBgAnim.interpolate({
     inputRange: [0, 0.5, 1],
@@ -327,6 +338,7 @@ const filterTabs = [
       setShowAICallModal(false);
       setSelectedLeadsForAI([]);
       setAICallPrompt('');
+      setCampaignName(''); // Reset campaign name
     });
   };
 
@@ -469,24 +481,41 @@ const filterTabs = [
       return;
     }
 
+    // Validate campaign name
+    if (!campaignName.trim()) {
+      Alert.alert('Campaign Name Required', 'Please enter a name for this calling campaign');
+      return;
+    }
+
     setProcessingAICalls(true);
 
     try {
-      // Prepare the data for the bulk-call API
-      const callToData = selectedLeadsForAI.map(lead => ({
-        id: lead.id,
-        phonenumber: lead.contact.phone
-      }));
+      const callToData = selectedLeadsForAI.map(lead => {
+        let phoneNumber = lead.contact.phone;
+        if (!phoneNumber.startsWith('+')) {
+          phoneNumber = '+' + phoneNumber.replace(/\D/g, '');
+        }
+        
+        return {
+          id: lead.id,
+          name: lead.contact.name,
+          phonenumber: phoneNumber
+        };
+      });
 
-      const bulkCallPayload = {
+      const bulkCallPayload: BulkCallRequest = {
         call_to: callToData,
-        additional_info: aiCallPrompt || "Standard lead qualification call"
+        name: campaignName.trim(),
+        additional_info: aiCallPrompt,
       };
 
-      // Call the API method from the service
+      console.log('Scheduling bulk AI calls with payload:', JSON.stringify(bulkCallPayload, null, 2));
+
+      // Use the apiService method instead of direct fetch call
       const response = await apiService.scheduleBulkAICalls(bulkCallPayload);
-      
-      if (!response.success) {
+
+      if (!response.success || !response.data) { 
+        console.log('API response error:', response.error);
         throw new Error(response.error || 'Failed to schedule AI calls');
       }
 
@@ -496,29 +525,30 @@ const filterTabs = [
           if (selectedLeadsForAI.some(selected => selected.id === lead.id)) {
             return {
               ...lead,
-              leadType: 'ai_processing',
+              leadType: 'ai_processing' as const,
               status: 'ai_processing',
               activities: [
                 ...(lead.activities || []),
                 {
-                  description: 'AI call scheduled',
+                  description: `AI call scheduled (${campaignName})`,
                   date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
                   icon: 'call',
                   type: 'ai_call',
                 },
               ],
-            };
+            } as CustomerLead;
           }
           return lead;
         })
       );
 
-      // Hide the modal and show success message
+      // Hide the modal and reset fields
       hideAICallBottomSheet();
+      setCampaignName(''); 
       
       Alert.alert(
         'AI Calls Scheduled! 🎉',
-        `Successfully scheduled ${selectedLeadsForAI.length} AI calls. You'll see results in the AI Processing tab.`,
+        `Successfully scheduled ${selectedLeadsForAI.length} AI calls for campaign "${campaignName}". You'll see results in the AI Processing tab.`,
         [
           {
             text: 'View Status',
@@ -527,11 +557,11 @@ const filterTabs = [
           { text: 'OK' },
         ]
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error scheduling AI calls:', error);
       Alert.alert(
         'Error',
-        'Failed to schedule AI calls. Please try again.',
+        error.message || 'Failed to schedule AI calls. Please try again.',
         [{ text: 'OK' }]
       );
     } finally {
@@ -710,51 +740,40 @@ if (lead.isSellable) {
   }
 
   // Add this function to handle the API call
-  const sellLead = async (leadId: string) => {
-    try {
-      // First, modify the lead to make it sellable
-      const response = await apiService.modifyLead(leadId, {
-        isSellable: true
-      });
+const sellLead = async (leadId: string) => {
+  try {
+    const response = await apiService.modifyLead(leadId, {
+      isSellable: true
+    });
 
-      if (response.success) {
-        // After successfully making the lead sellable, create the vector lead
-        const vectorResponse = await apiService.createVectorLead(leadId);
-        
-        if (vectorResponse.success) {
-          console.log('Vector lead created successfully:', vectorResponse.data?.message);
-        } else {
-          console.warn('Vector lead creation failed:', vectorResponse.error);
-          // We'll still continue as the main lead update was successful
-        }
-
-        // Update the lead in the local state
-        setCustomerLeads(prev => 
-          prev.map(lead => {
-            if (lead.id === leadId) {
-              return {
-                ...lead,
-                isSellable: true,
-                tags: [...(lead.tags?.filter(tag => tag !== 'My Lead') || []), 'For Sale']
-              };
-            }
-            return lead;
-          })
-        );
-        
-        // Show success message
-        Alert.alert('Success', 'Your lead is now available for sale in the marketplace');
-      } else {
-        Alert.alert('Error', 'Failed to sell lead. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error selling lead:', error);
-      Alert.alert('Error', 'An error occurred while trying to sell this lead');
-    } finally {
-      setShowSellLeadModal(false);
-      setSelectedLeadToSell(null);
+    if(response.success) {
+      // Update the lead in the local state
+      setCustomerLeads(prev => 
+        prev.map(lead => {
+          if (lead.id === leadId) {
+            return {
+              ...lead,
+              isSellable: true,
+              tags: [...(lead.tags?.filter(tag => tag !== 'My Lead') || []), 'Purchased']
+            };
+          }
+          return lead;
+        })
+      );
+      
+      // Show success message
+      Alert.alert('Success', 'Your lead is now available for sale');
+    } else {
+      Alert.alert('Error', 'Failed to sell lead. Please try again.');
     }
-  };
+  } catch (error) {
+    console.error('Error selling lead:', error);
+    Alert.alert('Error', 'An error occurred while trying to sell this lead');
+  } finally {
+    setShowSellLeadModal(false);
+    setSelectedLeadToSell(null);
+  }
+};
 
   return (
     <>
@@ -1342,6 +1361,15 @@ if (lead.isSellable) {
                   </TouchableOpacity>
                 </View>
                 <Text className="text-gray-600 mb-4">Select leads for AI cold calling. Our AI will assess their interest and qualify them automatically.</Text>
+                
+                {/* Campaign Name Input Field - NEW */}
+                <Text className="text-sm font-medium text-gray-700 mb-2">Campaign Name</Text>
+                <TextInput
+                  className="bg-gray-100 p-3 rounded-lg text-sm mb-4"
+                  placeholder="e.g., June Outreach, Policy Renewal Campaign..."
+                  value={campaignName}
+                  onChangeText={setCampaignName}
+                />
               </View>
               <ScrollView className="max-h-96">
                 {newLeads.map(lead => {

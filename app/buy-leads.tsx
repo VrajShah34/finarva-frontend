@@ -202,16 +202,79 @@ export default function BuyLeadsScreen() {
   };
   
   const handleBuyLead = (leadId: string) => {
+    // Don't allow purchase if user doesn't have enough coins
+    const leadCost = Math.max(10, Math.round(filteredLeads.find(lead => lead.id === leadId)?.match || 0) / 10);
+    
+    if (!userProfile || userProfile.wallet_balance < leadCost) {
+      Alert.alert(
+        'Insufficient Coins',
+        `You need ${leadCost} coins to purchase this lead. Please add more coins to your wallet.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
       'Confirm Purchase',
-      'Are you sure you want to purchase this lead?',
+      `Are you sure you want to purchase this lead for ${leadCost} coins?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Buy Now', 
-          onPress: () => {
-            // Here you would implement the actual purchase API call
-            Alert.alert('Success', 'Lead purchased successfully!');
+          onPress: async () => {
+            try {
+              // Show loading indicator
+              setLoading(true);
+              
+              // Call API to update the lead with current user as buyer
+              const updateResponse = await apiService.modifyLead(leadId, {
+                action: 'add_buyer',
+                buyer_gp_id: userProfile._id
+              });
+              
+              if (updateResponse.success) {
+                // Use the new coins/use API to deduct coins
+                const coinsResponse = await apiService.useCoins(leadCost);
+                
+                if (coinsResponse.success) {
+                  // Update local user profile with new balance from the response
+                  setUserProfile({
+                    ...userProfile,
+                    wallet_balance: coinsResponse.data?.currentCoins || (userProfile.wallet_balance - leadCost)
+                  });
+                  
+                  // Show success message
+                  Alert.alert(
+                    'Lead Purchased Successfully!', 
+                    'This lead has been added to your leads list. You can view and contact them from My Leads.',
+                    [
+                      { 
+                        text: 'Go to My Leads', 
+                        onPress: () => router.push('/my-leads')
+                      },
+                      {
+                        text: 'Continue Browsing',
+                        style: 'cancel'
+                      }
+                    ]
+                  );
+                  
+                  // Remove the purchased lead from the current list
+                  const updatedLeads = filteredLeads.filter(lead => lead.id !== leadId);
+                  setFilteredLeads(updatedLeads);
+                  setLeads(leads.filter(lead => lead.id !== leadId));
+                } else {
+                  Alert.alert('Error', coinsResponse.error || 'Failed to deduct coins');
+                }
+              } else {
+                Alert.alert('Error', updateResponse.error || 'Failed to purchase lead');
+              }
+            } catch (error) {
+              console.error('Error purchasing lead:', error);
+              Alert.alert('Error', 'An unexpected error occurred while purchasing the lead');
+            } finally {
+              setLoading(false);
+            }
           }
         }
       ]
@@ -280,9 +343,12 @@ export default function BuyLeadsScreen() {
             </TouchableOpacity>
             <Text className="text-white text-xl font-bold">Buy Leads</Text>
           </View>
-          <TouchableOpacity>
-            <Ionicons name="menu" size={24} color="white" />
-          </TouchableOpacity>
+          <View className="flex-row items-center bg-white bg-opacity-20 px-3 py-1.5 rounded-full">
+                    <Text style={{ color: "#FFD700", fontSize: 22 }}>🪙</Text>
+                    <Text className="text-primary text-xl font-bold ml-2">
+                      {userProfile?.wallet_balance || 0}
+                    </Text>
+                  </View>
         </View>
         
         {/* Content Area */}
@@ -538,18 +604,18 @@ export default function BuyLeadsScreen() {
                     
                     <View className="flex-row items-center">
                       <TouchableOpacity 
-                        className="rounded-l-2xl px-5 py-2.5 flex-row items-center shadow-sm"
+                        className="rounded-l-2xl px-2 py-2.5 flex-row items-center shadow-sm"
                         style={{ backgroundColor: '#4f46e5' }}
                         onPress={() => handleBuyLead(lead.id)}
                       >
                         <Ionicons name="add" size={18} color="white" />
-                        <Text className="text-white font-medium ml-1">
+                        <Text className="text-white font-medium ml">
                           Add to My Leads
                         </Text>
                       </TouchableOpacity>
                       
                       <View className="bg-[#3b82f6] rounded-r-2xl py-2.5 px-4 shadow-sm">
-                        <Text className="text-white font-bold">₹{Math.max(10, Math.round(lead.match / 10))}</Text>
+                        <Text className="text-white font-bold">🪙{Math.max(10, Math.round(lead.match / 10))}</Text>
                       </View>
                     </View>
                   </View>

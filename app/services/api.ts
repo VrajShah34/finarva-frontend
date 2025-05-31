@@ -279,9 +279,12 @@ export interface CaseStudySubmissionResponse {
 export interface BulkCallRequest {
   call_to: {
     id: string;
+    name: string;
     phonenumber: string;
   }[];
+  name: string;
   additional_info: string;
+  token: string;
 }
 
 /**
@@ -341,8 +344,107 @@ export interface QueryRecommendationResponse {
   recommendations: RecommendedLead[];
 }
 
+export interface AddCoinsResponse {
+  success: boolean;
+  message: string;
+  newBalance?: number;
+}
+
+// Add this interface
+export interface UseCoinsResponse {
+  message: string;
+  currentCoins: number;
+  used: number;
+}
+
+// Add these interfaces for the bulk call requests API
+export interface CallDetails {
+  lead_id: string;
+  phonenumber: string;
+  status: string;
+  callSid: string | null;
+  conversation_id: string | null;
+  error: string | null;
+  updatedAt: string;
+  conversation_details: any | null;
+}
+
+export interface AllBulkCallRequest {
+  request_id: string;
+  status: string;
+  total_calls: number;
+  completed_calls: number;
+  failed_calls: number;
+  no_answer_calls: number;
+  additional_info: string;
+  createdAt: string;
+  updatedAt: string;
+  calls: CallDetails[];
+  summary: {
+    pending: number;
+    queued: number;
+    initiated: number;
+    completed: number;
+    no_answer: number;
+    failed: number;
+    high_priority: number;
+    interested_leads: number;
+    positive_sentiment: number;
+  };
+  performance_metrics: {
+    completion_rate: string;
+    answer_rate: string;
+    success_rate: string;
+  };
+}
+
+export interface BulkCallRequestsResponse {
+  success: boolean;
+  bulk_requests: AllBulkCallRequest[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+  };
+  filters_applied: Record<string, any>;
+  sort: {
+    by: string;
+    order: string;
+  };
+}
+
+// Add this interface for the lead data response
+export interface LeadDetailsResponse {
+  message: string;
+  lead: {
+    contact: {
+      name: string;
+      phone: string;
+    };
+    interest: {
+      products: string[];
+    };
+    _id: string;
+    referrer_gp_id: string;
+    buyer_gp_ids: string[];
+    isSellable: boolean;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+    referrer?: {
+      _id: string;
+      name: string;
+      email: string;
+    };
+    buyers: any[];
+    id: string;
+  };
+}
+
 class ApiService {
-  private async getAuthToken(): Promise<string | null> {
+  public async getAuthToken(): Promise<string | null> {
     try {
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       return await AsyncStorage.getItem('userToken');
@@ -646,18 +748,22 @@ async modifyLead(leadId: string, data: any): Promise<ApiResponse<any>> {
  */
 async scheduleBulkAICalls(callData: BulkCallRequest): Promise<ApiResponse<BulkCallResponse>> {
   try {
-    const response = await fetch('https://fa0a-180-151-5-26.ngrok-free.app/bulk-call', {
+    console.log('Scheduling bulk AI calls with data:', JSON.stringify(callData, null, 2));
+    
+    // Make request with NO headers at all
+    const response = await fetch('https://1e1c-14-194-2-90.ngrok-free.app/bulk-call', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...this.getAuthHeaders(),
+        
       },
-      body: JSON.stringify(callData),
+      body: JSON.stringify(callData)
     });
 
     const data = await response.json();
     
     if (!response.ok) {
+      console.error('Bulk call API error:', data);
       return {
         success: false,
         error: data.message || 'Failed to schedule AI calls',
@@ -778,6 +884,65 @@ async getQueryRecommendedLeads(query: string): Promise<ApiResponse<QueryRecommen
       error: error instanceof Error ? error.message : 'Unknown error occurred',
     };
   }
+}
+
+async addCoins(amount: number): Promise<ApiResponse<AddCoinsResponse>> {
+  console.log(`Adding ${amount} coins to user profile`);
+  return this.makeRequest(API_PATHS.GP, '/coins/add', {
+    method: 'POST',
+    body: JSON.stringify({ amount }),
+  }, true);
+}
+
+async useCoins(amount: number): Promise<ApiResponse<UseCoinsResponse>> {
+  console.log(`Using ${amount} coins from user profile`);
+  return this.makeRequest(API_PATHS.GP, '/coins/use', {
+    method: 'POST',
+    body: JSON.stringify({ amount }),
+  }, true);
+}
+
+// Add this method to fetch bulk call requests
+async getBulkCallRequests(): Promise<ApiResponse<BulkCallRequestsResponse>> {
+  try {
+    const response = await fetch('https://1e1c-14-194-2-90.ngrok-free.app/bulk-call-requests', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders(),
+      },
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.message || 'Failed to fetch call requests',
+      };
+    }
+    
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    console.error('Error fetching bulk call requests:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+
+
+// Add this method to the ApiService class
+async getLeadById(leadId: string): Promise<ApiResponse<LeadDetailsResponse>> {
+  console.log('Fetching lead details for ID:', leadId);
+  return this.makeRequest('/api', `/leads/${leadId}`, {
+    method: 'GET',
+  }, true);
 }
 }
 

@@ -2,7 +2,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
-  Platform,
   ScrollView,
   StatusBar,
   Text,
@@ -11,8 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { apiService, SubmitAnswerResponse } from '../services/api';
 import AIAssessmentModal from '../components/AIAssessmentModal';
+import { apiService } from '../services/api';
 
 const CaseStudyScreen = () => {
   const { moduleId, contentType } = useLocalSearchParams();
@@ -119,6 +118,15 @@ const handleAIAssessmentComplete = async (data?: { feedback: string; score: numb
       
       if (response.success) {
         console.log('✅ Module marked as completed - course progress updated in real-time');
+        
+        // Add coins to user profile using the new API method
+        const coinsResponse = await apiService.addCoins(10);
+        
+        if (coinsResponse.success) {
+          console.log('✅ Coins added successfully:', coinsResponse.data);
+        } else {
+          console.error('❌ Failed to add coins:', coinsResponse.error);
+        }
         
         // Immediate redirect to course details page
         setTimeout(() => {
