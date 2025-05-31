@@ -79,6 +79,35 @@ const VideoPlayerScreen = () => {
     return null;
   };
 
+  const getNextScreen = () => {
+  const hasResources = moduleData?.module?.external_resources && moduleData.module.external_resources.length > 0;
+  const hasCase = moduleData?.module?.case_scenario;
+  
+  if (hasResources) {
+    return {
+      pathname: '/(module)/resources',
+      params: { moduleId, contentType: 'resources_accessed' },
+      label: 'Next: Resources'
+    };
+  } else if (hasCase) {
+    return {
+      pathname: '/(module)/case-study',
+      params: { moduleId, contentType: 'case_completed' },
+      label: 'Next: Assessment'
+    };
+  } else {
+    return null; // No next screen available
+  }
+};
+
+const getPreviousScreen = () => {
+  return {
+    pathname: '/(module)/content-viewer',
+    params: { moduleId, contentType: 'content_viewed' },
+    label: 'Previous: Content'
+  };
+};
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -332,28 +361,46 @@ const VideoPlayerScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom navigation */}
-      <View className="px-4 py-4 pb-6 border-t border-gray-200 bg-white">
-        <View className="flex-row justify-between items-center">
-          <TouchableOpacity 
-            className="bg-gray-100 px-4 py-2 rounded-lg"
-            onPress={() => router.back()}
-          >
-            <Text className="text-gray-700 font-medium">Previous</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            className="bg-[#1E4B88] px-6 py-2 rounded-lg flex-row items-center"
-            onPress={() => router.push({
-              pathname: '/(module)/resources',
-              params: { moduleId, contentType: 'resources_accessed' }
-            })}
-          >
-            <Text className="text-white font-bold mr-2">Next: Resources</Text>
-            <Icon name="arrow-right" size={16} color="white" />
-          </TouchableOpacity>
-        </View>
-      </View>
+     <View className="px-4 py-4 pb-6 border-t border-gray-200 bg-white">
+  <View className="flex-row justify-between items-center">
+    <TouchableOpacity 
+      className="bg-gray-100 px-4 py-2 rounded-lg"
+      onPress={() => {
+        const prevScreen = getPreviousScreen();
+        router.push({
+          pathname: prevScreen.pathname,
+          params: prevScreen.params
+        });
+      }}
+    >
+      <Text className="text-gray-700 font-medium">Previous</Text>
+    </TouchableOpacity>
+    
+    {(() => {
+      const nextScreen = getNextScreen();
+      return nextScreen ? (
+        <TouchableOpacity 
+          className="bg-[#1E4B88] px-6 py-2 rounded-lg flex-row items-center"
+          onPress={() => router.push({
+            pathname: nextScreen.pathname,
+            params: nextScreen.params
+          })}
+        >
+          <Text className="text-white font-bold mr-2">{nextScreen.label}</Text>
+          <Icon name="arrow-right" size={16} color="white" />
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity 
+          className="bg-green-600 px-6 py-2 rounded-lg flex-row items-center"
+          onPress={() => router.back()}
+        >
+          <Text className="text-white font-bold mr-2">Complete Module</Text>
+          <Icon name="check" size={16} color="white" />
+        </TouchableOpacity>
+      );
+    })()}
+  </View>
+</View>
     </SafeAreaView>
     </>
   );
