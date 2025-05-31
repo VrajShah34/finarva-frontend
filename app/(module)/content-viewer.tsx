@@ -96,6 +96,48 @@ const ContentViewerScreen: React.FC = () => {
     }
   }, [moduleId]);
 
+  const getNextScreen = () => {
+  const hasVideo = moduleData?.module?.video_url && moduleData.module.video_url.trim() !== '';
+  const hasResources = moduleData?.module?.external_resources && moduleData.module.external_resources.length > 0;
+  const hasCase = moduleData?.module?.case_scenario;
+  
+  if (hasVideo) {
+    return {
+      pathname: '/(module)/video-player',
+      params: { moduleId, contentType: 'video_watched' },
+      label: 'Next: Videos'
+    };
+  } else if (hasResources) {
+    return {
+      pathname: '/(module)/resources',
+      params: { moduleId, contentType: 'resources_accessed' },
+      label: 'Next: Resources'
+    };
+  } else if (hasCase) {
+    return {
+      pathname: '/(module)/case-study',
+      params: { moduleId, contentType: 'case_completed' },
+      label: 'Next: Assessment'
+    };
+  } else {
+    return null; // No next screen available
+  }
+};
+
+// Updated handleNext function
+const handleNext = () => {
+  const nextScreen = getNextScreen();
+  if (nextScreen) {
+    router.push({
+      pathname: nextScreen.pathname,
+      params: nextScreen.params,
+    });
+  } else {
+    // If no next screen, go back to course or show completion
+    router.back();
+  }
+};
+
   const cleanTextForTTS = (text: string): string => {
     return text
       .replace(/\*\*/g, '')
@@ -319,14 +361,6 @@ const ContentViewerScreen: React.FC = () => {
         estimatedTime: Math.ceil(estimatedTime * 0.15)
       }
     ];
-  };
-
-  // Direct navigation to video section
-  const handleNext = () => {
-    router.push({
-      pathname: '/(module)/video-player',
-      params: { moduleId, contentType: 'video_watched' },
-    });
   };
 
   const renderFormattedContent = (content: string, colorScheme?: any) => {
@@ -676,13 +710,26 @@ const ContentViewerScreen: React.FC = () => {
             <Text className="font-medium text-gray-700">Back</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity
-            className="bg-blue-600 px-6 py-2 rounded-lg flex-row items-center"
-            onPress={handleNext}
-          >
-            <Text className="text-white font-medium mr-2">Next: Videos</Text>
-            <Icon name="arrow-right" size={16} color="white" />
-          </TouchableOpacity>
+          {(() => {
+            const nextScreen = getNextScreen();
+            return nextScreen ? (
+              <TouchableOpacity
+                className="bg-blue-600 px-6 py-2 rounded-lg flex-row items-center"
+                onPress={handleNext}
+              >
+                <Text className="text-white font-medium mr-2">{nextScreen.label}</Text>
+                <Icon name="arrow-right" size={16} color="white" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                className="bg-green-600 px-6 py-2 rounded-lg flex-row items-center"
+                onPress={() => router.back()}
+              >
+                <Text className="text-white font-medium mr-2">Complete Module</Text>
+                <Icon name="check" size={16} color="white" />
+              </TouchableOpacity>
+            );
+          })()}
         </View>
       </View>
     </SafeAreaView>

@@ -135,7 +135,7 @@ const LearningScreen = () => {
       <View style={{ backgroundColor: primaryColor }} className="py-5 px-4 flex-row justify-between items-center">
           <View className="flex-row items-center">
             
-            <Text className="text-white text-2xl font-bold">Learn</Text>
+            <Text className="text-white text-2xl font-bold">Gromo+</Text>
           </View>
           
         </View>
