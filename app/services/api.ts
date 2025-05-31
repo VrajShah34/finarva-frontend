@@ -443,6 +443,27 @@ export interface LeadDetailsResponse {
   };
 }
 
+// Add these interfaces
+export interface ChatMessage {
+  text: string;
+  isCustomer: boolean;
+}
+
+export interface RecommendationsResponse {
+  message: string;
+  recommendations: {
+    suggestedReplies: string[];
+    insights: string[];
+    recommendations: string[];
+  };
+  raw: string;
+}
+
+export interface ConversationAnalysisResponse {
+  message: string;
+  analysis: any;
+}
+
 class ApiService {
   public async getAuthToken(): Promise<string | null> {
     try {
@@ -943,6 +964,89 @@ async getLeadById(leadId: string): Promise<ApiResponse<LeadDetailsResponse>> {
   return this.makeRequest('/api', `/leads/${leadId}`, {
     method: 'GET',
   }, true);
+}
+
+/**
+ * Generate AI recommendations based on chat history
+ * @param data Chat history and context data
+ * @returns Recommendations from the AI
+ */
+async generateRecommendations(data: {
+  chatHistory: ChatMessage[];
+  productContext?: string;
+  customerDetails?: any;
+}): Promise<ApiResponse<RecommendationsResponse>> {
+  try {
+    const response = await fetch(`${this.baseUrl}/api/recommendations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders(),
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        success: false,
+        error: errorData.message || 'Failed to generate recommendations',
+      };
+    }
+
+    const responseData = await response.json();
+    return {
+      success: true,
+      data: responseData,
+    };
+  } catch (error) {
+    console.error('Error generating recommendations:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+/**
+ * Analyze conversation between financial advisor and customer
+ * @param data Chat history and context data
+ * @returns Analysis of the conversation
+ */
+async analyzeConversation(data: {
+  chatHistory: ChatMessage[];
+  customerDetails?: any;
+}): Promise<ApiResponse<ConversationAnalysisResponse>> {
+  try {
+    const response = await fetch(`${this.baseUrl}/api/recommendations/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders(),
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        success: false,
+        error: errorData.message || 'Failed to analyze conversation',
+      };
+    }
+
+    const responseData = await response.json();
+    return {
+      success: true,
+      data: responseData,
+    };
+  } catch (error) {
+    console.error('Error analyzing conversation:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
 }
 }
 
