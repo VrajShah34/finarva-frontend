@@ -734,8 +734,7 @@ const AIColdCallsScreen = () => {
                                     pathname: '/ai-call-analysis',
                                     params: { 
                                       conversationId: call.conversation_id,
-                                      callSid: call.callSid,
-                                      // Use the real lead name if available
+                                      callSid: call.callSid,      
                                       leadName: leadInfo[call.id]?.contact?.name || call.name,
                                       phoneNumber: call.phone,
                                       location: call.location || 'Not specified'

@@ -115,11 +115,11 @@ export default function AICallAnalysisScreen() {
     
     // Basic language detection based on script
     const hindiPattern = /[\u0900-\u097F]/; // Hindi Unicode range
-    const marathiPattern = /[\u0900-\u097F]/; // Marathi uses Devanagari script like Hindi
+    
     
     const sampleText = transcript[0]?.text || '';
     
-    if (marathiPattern.test(sampleText)) return 'Marathi';
+    
     if (hindiPattern.test(sampleText)) return 'Hindi';
     return 'English';
   };
@@ -135,11 +135,13 @@ export default function AICallAnalysisScreen() {
       
       setLoading(true);
       try {
+        // Use the API endpoint from your requirements
         const response = await fetch(`https://1e1c-14-194-2-90.ngrok-free.app/conversation/${conversationId}`);
         const data = await response.json();
         
         if (data.success && data.conversation) {
           setConversationData(data.conversation);
+          console.log("Conversation data loaded:", data.conversation);
         } else {
           setError(data.error || 'Failed to load conversation data');
         }
@@ -250,14 +252,12 @@ export default function AICallAnalysisScreen() {
             {/* AI Call Analysis Header */}
             <View className="bg-primary m-4 rounded-lg p-4 flex-row justify-between items-center">
               <View>
-                <Text className="text-white text-lg font-bold">AI Call Analysis</Text>
+                <Text className="text-white text-lg font-bold">Cold Call Analysis</Text>
                 <Text className="text-white text-xs opacity-80">
                   Analysis of Call to {leadName || 'Lead'}
                 </Text>
               </View>
-              <TouchableOpacity className="bg-[#18FFAA] w-10 h-10 rounded-full items-center justify-center">
-                <Ionicons name="refresh" size={20} color="primary" />
-              </TouchableOpacity>
+              
             </View>
             
             {/* Lead Info Card */}
@@ -271,7 +271,7 @@ export default function AICallAnalysisScreen() {
                     <Text className="font-bold text-lg text-gray-800">{leadName}</Text>
                     <View className="flex-row items-center">
                       <Ionicons name="location" size={14} color="#18FFAA" />
-                      <Text className="text-gray-500 ml-1 text-sm">{location}</Text>
+                      <Text className="text-gray-500 ml-1 text-sm">India</Text>
                     </View>
                   </View>
                 </View>
@@ -385,34 +385,49 @@ export default function AICallAnalysisScreen() {
               {/* Products Interest */}
               <View className="flex-row justify-between mb-4">
                 <View className="flex-1 mr-2">
-                  <Text className="text-gray-500 text-xs mb-1">Intent Detection</Text>
+                  <Text className="text-gray-500 text-xs mb-1">Interest Level</Text>
                   <View className="flex-row items-center justify-between">
                     <Text className="font-bold text-lg text-gray-800">
-                      {interestLevel === 'high' ? '92%' : interestLevel === 'medium' ? '75%' : '45%'}
+                      {conversationData?.interest?.interest_level || 'Not detected'}
                     </Text>
                     <Text className="text-[#18FFAA] text-xs">
-                      {conversationData?.interest?.products?.join(', ').replace(/_/g, ' ')}
+                      {conversationData?.interest?.products?.length 
+                        ? conversationData.interest.products.join(', ').replace(/_/g, ' ')
+                        : 'No products mentioned'}
                     </Text>
                   </View>
                   <View className="bg-gray-200 h-1 mt-1 rounded-full overflow-hidden">
                     <View 
                       className="bg-[#18FFAA] h-full rounded-full" 
                       style={{ 
-                        width: interestLevel === 'high' ? '92%' : 
-                               interestLevel === 'medium' ? '75%' : '45%' 
+                        width: conversationData?.interest?.interest_level === 'high' ? '90%' : 
+                               conversationData?.interest?.interest_level === 'medium' ? '60%' : 
+                               conversationData?.interest?.interest_level === 'low' ? '30%' : '0%'
                       }}
                     ></View>
                   </View>
                 </View>
                 
                 <View className="flex-1 ml-2">
-                  <Text className="text-gray-500 text-xs mb-1">Response Latency Avg</Text>
+                  <Text className="text-gray-500 text-xs mb-1">Urgency Level</Text>
                   <View className="flex-row items-center justify-between">
-                    <Text className="font-bold text-lg text-gray-800">1.4s</Text>
-                    <Text className="text-[#18FFAA] text-xs">Engaged</Text>
+                    <Text className="font-bold text-lg text-gray-800">
+                      {conversationData?.interest?.urgency_level?.replace(/_/g, ' ') || 'Not specified'}
+                    </Text>
+                    <Text className="text-[#18FFAA] text-xs">
+                      {conversationData?.interest?.urgency_level === 'short_term' ? 'Urgent' : 
+                       conversationData?.interest?.urgency_level === 'within_month' ? 'Soon' : 'Long-term'}
+                    </Text>
                   </View>
                   <View className="bg-gray-200 h-1 mt-1 rounded-full overflow-hidden">
-                    <View className="bg-[#18FFAA] h-full rounded-full" style={{ width: '80%' }}></View>
+                    <View 
+                      className="bg-[#18FFAA] h-full rounded-full" 
+                      style={{ 
+                        width: conversationData?.interest?.urgency_level === 'short_term' ? '90%' : 
+                               conversationData?.interest?.urgency_level === 'within_month' ? '60%' : 
+                               conversationData?.interest?.urgency_level === 'long_term' ? '30%' : '0%'
+                      }}
+                    ></View>
                   </View>
                 </View>
               </View>
@@ -420,22 +435,21 @@ export default function AICallAnalysisScreen() {
               {/* Sentiment Analysis */}
               <View className="flex-row justify-between mb-4">
                 <View className="flex-1 mr-2">
-                  <Text className="text-gray-500 text-xs mb-1">Tone Score</Text>
+                  <Text className="text-gray-500 text-xs mb-1">Overall Sentiment</Text>
                   <View className="flex-row items-center justify-between">
                     <Text className="font-bold text-lg text-gray-800">
-                      {conversationData?.sentiment_analysis?.overall_sentiment === 'positive' ? '+7.2' : 
-                       conversationData?.sentiment_analysis?.overall_sentiment === 'neutral' ? '+0.3' : '-2.1'}
+                      {conversationData?.sentiment_analysis?.overall_sentiment || 'Neutral'}
                     </Text>
                     <Text className="text-[#18FFAA] text-xs">
-                      {conversationData?.sentiment_analysis?.overall_sentiment || 'Neutral'}
+                      {conversationData?.sentiment_analysis?.user_sentiment || 'Not analyzed'}
                     </Text>
                   </View>
                   <View className="bg-gray-200 h-1 mt-1 rounded-full overflow-hidden">
                     <View 
                       className="bg-[#18FFAA] h-full rounded-full" 
                       style={{ 
-                        width: conversationData?.sentiment_analysis?.overall_sentiment === 'positive' ? '72%' : 
-                               conversationData?.sentiment_analysis?.overall_sentiment === 'neutral' ? '50%' : '30%' 
+                        width: conversationData?.sentiment_analysis?.overall_sentiment === 'positive' ? '90%' : 
+                               conversationData?.sentiment_analysis?.overall_sentiment === 'neutral' ? '50%' : '25%'
                       }}
                     ></View>
                   </View>
@@ -446,14 +460,20 @@ export default function AICallAnalysisScreen() {
                   <View>
                     {conversationData?.key_insights?.main_topics?.slice(0, 2).map((topic, index) => (
                       <Text key={index} className="text-gray-800 font-medium" style={{ fontSize: 13 }}>
-                        "{topic}" {index === 0 ? '5x' : '3x'}
+                        "{topic}"
                       </Text>
                     ))}
+                    {(!conversationData?.key_insights?.main_topics || 
+                      conversationData.key_insights.main_topics.length === 0) && (
+                      <Text className="text-gray-800 font-medium" style={{ fontSize: 13 }}>
+                        No main topics detected
+                      </Text>
+                    )}
                   </View>
                 </View>
               </View>
               
-              {/* Objections and Speech Clarity */}
+              {/* Objections and User Engagement */}
               <View className="flex-row justify-between">
                 <View className="flex-1 mr-2">
                   <Text className="text-gray-500 text-xs mb-1">Objection Count</Text>
@@ -462,28 +482,41 @@ export default function AICallAnalysisScreen() {
                       {conversationData?.objections?.length || 0}
                     </Text>
                     <Text className="text-[#18FFAA] text-xs">
-                      {conversationData?.objections?.length ? 'Some concerns' : 'None'}
+                      {conversationData?.objections && conversationData.objections.length > 0 ? 'Some concerns' : 'None detected'}
                     </Text>
                   </View>
                   <View className="bg-gray-200 h-1 mt-1 rounded-full overflow-hidden">
                     <View 
                       className="bg-[#18FFAA] h-full rounded-full" 
                       style={{ 
-                        width: conversationData?.objections?.length ? 
-                          `${Math.min(conversationData.objections.length * 20, 100)}%` : '0%' 
+                        width: conversationData?.objections?.length 
+                          ? `${Math.min((conversationData.objections.length / 3) * 100, 100)}%` 
+                          : '0%'
                       }}
                     ></View>
                   </View>
                 </View>
                 
                 <View className="flex-1 ml-2">
-                  <Text className="text-gray-500 text-xs mb-1">Speech Clarity</Text>
+                  <Text className="text-gray-500 text-xs mb-1">User Response</Text>
                   <View className="flex-row items-center justify-between">
-                    <Text className="font-bold text-lg text-gray-800">89%</Text>
-                    <Text className="text-[#18FFAA] text-xs">Clear</Text>
+                    <Text className="font-bold text-lg text-gray-800">
+                      {conversationData?.positive_responses?.length || 0}
+                    </Text>
+                    <Text className="text-[#18FFAA] text-xs">
+                      {(conversationData?.positive_responses && conversationData.positive_responses.length > 2) ? 'Very responsive' : 
+                       (conversationData?.positive_responses && conversationData.positive_responses.length > 0) ? 'Responsive' : 'Limited'}
+                    </Text>
                   </View>
                   <View className="bg-gray-200 h-1 mt-1 rounded-full overflow-hidden">
-                    <View className="bg-[#18FFAA] h-full rounded-full" style={{ width: '89%' }}></View>
+                    <View 
+                      className="bg-[#18FFAA] h-full rounded-full" 
+                      style={{ 
+                        width: conversationData?.positive_responses?.length
+                          ? `${Math.min((conversationData.positive_responses.length / 3) * 100, 100)}%`
+                          : '0%'
+                      }}
+                    ></View>
                   </View>
                 </View>
               </View>
@@ -493,19 +526,20 @@ export default function AICallAnalysisScreen() {
                 <Text className="text-gray-500 text-xs mb-1">User Engagement</Text>
                 <View className="flex-row items-center justify-between">
                   <Text className="font-bold text-lg text-gray-800">
-                    {conversationData?.user_engagement === 'High' ? '91.6%' : 
-                     conversationData?.user_engagement === 'Medium' ? '65.2%' : '32.8%'}
+                    {conversationData?.user_engagement || 'Medium'}
                   </Text>
                   <Text className="text-xs" style={{ color: interestScore.color }}>
-                    {conversationData?.user_engagement || 'Medium'}
+                    {conversationData?.call_duration 
+                      ? `${Math.floor(conversationData.call_duration / 60)}:${(conversationData.call_duration % 60).toString().padStart(2, '0')}`
+                      : 'N/A'}
                   </Text>
                 </View>
                 <View className="bg-gray-200 h-1 mt-1 rounded-full overflow-hidden">
                   <View 
                     className="bg-[#18FFAA] h-full rounded-full" 
                     style={{ 
-                      width: conversationData?.user_engagement === 'High' ? '91.6%' : 
-                             conversationData?.user_engagement === 'Medium' ? '65.2%' : '32.8%' 
+                      width: conversationData?.user_engagement === 'High' ? '90%' : 
+                             conversationData?.user_engagement === 'Medium' ? '60%' : '30%'
                     }}
                   ></View>
                 </View>
@@ -527,39 +561,53 @@ export default function AICallAnalysisScreen() {
                   <Ionicons name="sync" size={16} color="#3b82f6" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-gray-700 font-medium">Suggested Action:</Text>
-                  <Text className="text-gray-600">
-                    {conversationData?.recommendations?.immediate_actions?.[0] || 
-                     'Follow up with the lead based on their interest level.'}
-                  </Text>
+                  <Text className="text-gray-700 font-medium">Suggested Actions:</Text>
+                  {conversationData?.recommendations?.immediate_actions?.map((action, index) => (
+                    <Text key={index} className="text-gray-600 mt-1">• {action}</Text>
+                  ))}
+                  {(!conversationData?.recommendations?.immediate_actions || 
+                    conversationData.recommendations.immediate_actions.length === 0) && (
+                    <Text className="text-gray-600">No immediate actions recommended</Text>
+                  )}
                 </View>
               </View>
               
-              {/* Product Pitch */}
+              {/* Product Interest */}
               <View className="mb-3 flex-row">
                 <View className="w-7 h-7 rounded-full bg-blue-50 items-center justify-center mr-3">
                   <Ionicons name="cart" size={16} color="#3b82f6" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-gray-700 font-medium">Product Pitch:</Text>
+                  <Text className="text-gray-700 font-medium">Product Interest:</Text>
                   <Text className="text-gray-600">
-                    {conversationData?.interest?.products?.map(p => 
-                      p.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-                    ).join(', ') || 'Financial products based on needs assessment.'}
+                    {conversationData?.interest?.products && Array.isArray(conversationData.interest.products) && conversationData.interest.products.length > 0
+                      ? conversationData.interest.products.map(p => 
+                          p.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                        ).join(', ')
+                      : 'No specific products mentioned'}
                   </Text>
+                  {conversationData?.interest?.budget_range && (
+                    <Text className="text-gray-600 mt-1">
+                      Budget: {conversationData.interest.budget_range}
+                    </Text>
+                  )}
                 </View>
               </View>
               
-              {/* Language Setting */}
+              {/* User Concerns */}
               <View className="mb-3 flex-row">
                 <View className="w-7 h-7 rounded-full bg-blue-50 items-center justify-center mr-3">
-                  <Ionicons name="language" size={16} color="#3b82f6" />
+                  <Ionicons name="alert-circle" size={16} color="#3b82f6" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-gray-700 font-medium">Language Setting:</Text>
-                  <Text className="text-gray-600">
-                    Set default language as {language} for future interactions.
-                  </Text>
+                  <Text className="text-gray-700 font-medium">User Concerns:</Text>
+                  {conversationData?.key_insights?.user_concerns?.map((concern, index) => (
+                    <Text key={index} className="text-gray-600 mt-1">• {concern}</Text>
+                  ))}
+                  {(!conversationData?.key_insights?.user_concerns || 
+                    conversationData.key_insights.user_concerns.length === 0) && (
+                    <Text className="text-gray-600">No concerns detected</Text>
+                  )}
                 </View>
               </View>
               
@@ -575,42 +623,40 @@ export default function AICallAnalysisScreen() {
                     {conversationData?.personal_data?.age ? `${conversationData.personal_data.age} years old, ` : ''}
                     {conversationData?.personal_data?.income ? `₹${conversationData.personal_data.income} income` : 'Income not specified'}
                   </Text>
+                  {conversationData?.financial_profile?.estimated_income_range && (
+                    <Text className="text-gray-600 mt-1">
+                      Estimated income: {conversationData.financial_profile.estimated_income_range.replace(/_/g, ' ')}
+                    </Text>
+                  )}
                 </View>
               </View>
               
-              {/* CRM Tags */}
+              {/* Next Steps */}
               <View className="flex-row">
                 <View className="w-7 h-7 rounded-full bg-blue-50 items-center justify-center mr-3">
-                  <Ionicons name="pricetag" size={16} color="#3b82f6" />
+                  <Ionicons name="arrow-forward-circle" size={16} color="#3b82f6" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-gray-700 font-medium">CRM Tag:</Text>
-                  <Text className="text-gray-600">
-                    #{interestLevel === 'high' ? 'WarmLead' : interestLevel === 'medium' ? 'InterestedLead' : 'ColdLead'} 
-                    {language !== 'English' ? ` #${language}Speaker` : ''} 
-                    {location !== 'Not specified' ? ` #${location}` : ''} 
-                    {conversationData?.interest?.products?.map(p => 
-                      ` #${p.replace(/_/g, '').replace(/\b\w/g, l => l.toUpperCase())}`
-                    ).join('')}
-                  </Text>
+                  <Text className="text-gray-700 font-medium">Next Steps:</Text>
+                  {conversationData?.key_insights?.next_steps?.map((step, index) => (
+                    <Text key={index} className="text-gray-600 mt-1">• {step}</Text>
+                  ))}
+                  {(!conversationData?.key_insights?.next_steps || 
+                    conversationData.key_insights.next_steps.length === 0) && (
+                    <Text className="text-gray-600">No specific next steps recommended</Text>
+                  )}
+                  {conversationData?.recommendations?.follow_up_strategy && (
+                    <Text className="text-gray-600 mt-2 font-medium">
+                      Follow-up strategy: {conversationData.recommendations.follow_up_strategy.replace(/_/g, ' ')}
+                    </Text>
+                  )}
                 </View>
               </View>
             </View>
             
             {/* Action Buttons */}
             <View className="px-4 mb-24">
-              <TouchableOpacity 
-                className="bg-primary p-4 rounded-lg flex-row justify-center items-center mb-3"
-                onPress={() => {
-                  Alert.alert('Schedule Callback', 'Would you like to schedule a callback for this lead?', [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Schedule', onPress: () => console.log('Scheduling callback') }
-                  ]);
-                }}
-              >
-                <Ionicons name="calendar" size={20} color="white" />
-                <Text className="text-white font-medium ml-2">Schedule Callback</Text>
-              </TouchableOpacity>
+             
               
               <TouchableOpacity 
                 className="bg-[#18FFAA] p-4 rounded-lg flex-row justify-center items-center mb-3"
