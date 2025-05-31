@@ -813,7 +813,7 @@ const sellLead = async (leadId: string) => {
                   <Ionicons name="add" size={20} color={primaryColor} />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-white text-sm font-bold">Buy Leads</Text>
+                  <Text className="text-white text-lg font-bold">Buy Leads</Text>
                   <Text className="text-[#18FFAA] text-xs">AI-matched prospects</Text>
                 </View>
               </TouchableOpacity>
@@ -829,7 +829,7 @@ const sellLead = async (leadId: string) => {
                   <Ionicons name="people" size={20} color="#18FFAA" />
                 </View>
                 <View className="flex-1 b">
-                  <Text className="font-bold text-sm" style={{ color: primaryColor }}>
+                  <Text className="font-bold text-md" style={{ color: primaryColor }}>
                     Add Contacts
                   </Text>
                   <Text className="text-xs" style={{ color: primaryColor }}>

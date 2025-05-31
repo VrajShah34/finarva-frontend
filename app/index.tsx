@@ -8,7 +8,7 @@ export default function WelcomeScreen() {
 
   const handleGetStarted = () => {
     // Navigate to the main tabs when user clicks "Get Started"
-    router.push('/register');
+    router.push('/sign-in');
   };
 
   return (
