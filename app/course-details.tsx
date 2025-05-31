@@ -1,3 +1,5 @@
+// Updated course-details.tsx with chatbot_completed as the ONLY completion criteria
+
 import { useNavigation } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -39,17 +41,18 @@ const CourseDetailsScreen = () => {
   const [courseDetails, setCourseDetails] = useState<CourseDetails | null>(null);
   const [loadingModules, setLoadingModules] = useState<boolean>(false);
   const [previousExpandedModule, setPreviousExpandedModule] = useState<string | null>(null);
+
+  console.log('Module progress:', courseDetails?.modules[0]?.progress.completed_sections);
   
   // Animation values for sequential animation
   const textContentAnim = useRef(new Animated.Value(0)).current;
   const videoContentAnim = useRef(new Animated.Value(0)).current;
   const resourcesContentAnim = useRef(new Animated.Value(0)).current;
   const caseStudyContentAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Start course and fetch course details
   useEffect(() => {
     const fetchCourseDetails = async () => {
-      // Ensure courseId is a string and not null/undefined
       const courseIdStr = courseId ? String(courseId) : null;
       
       if (!courseIdStr) {
@@ -60,20 +63,18 @@ const CourseDetailsScreen = () => {
       
       try {
         setIsLoading(true);
-        console.log('Starting course with ID:', courseIdStr);
+        console.log('🔄 REFRESHING: Starting course with ID:', courseIdStr);
         
-        // Use the API service to start the course with the validated ID
         const response = await apiService.startCourse(courseIdStr);
+        console.log('Course start response:', response);
         
         if (response.success && response.data && response.data.course) {
-          // Initialize course details
           const course = response.data.course;
           setCourseDetails({
             ...course,
             modules: [],
           });
           
-          // Fetch module details
           await fetchModuleDetails(course);
         } else {
           setError(response.error || response.message || 'Failed to load course');
@@ -88,8 +89,56 @@ const CourseDetailsScreen = () => {
     
     fetchCourseDetails();
   }, [courseId]);
+
+  // Add focus listener to refresh data when user comes back to this screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      console.log('🔄 SCREEN FOCUSED - Refreshing course data...');
+      
+      // Clear previous data and refresh
+      setCourseDetails(null);
+      setError(null);
+      
+      // Fetch fresh data
+      const courseIdStr = courseId ? String(courseId) : null;
+      if (courseIdStr) {
+        refreshCourseData(courseIdStr);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, courseId]);
+
+  // Separate refresh function for better control
+  const refreshCourseData = async (courseIdStr: string) => {
+    try {
+      setIsLoading(true);
+      console.log('🔄 REFRESHING COURSE DATA for ID:', courseIdStr);
+      
+      const response = await apiService.startCourse(courseIdStr);
+      console.log('Refreshed course data:', response);
+      
+      if (response.success && response.data && response.data.course) {
+        const course = response.data.course;
+        setCourseDetails({
+          ...course,
+          modules: [],
+        });
+        
+        await fetchModuleDetails(course);
+        console.log('✅ Course data refreshed successfully');
+      } else {
+        setError(response.error || response.message || 'Failed to load course');
+      }
+    } catch (err) {
+      console.error('❌ Error refreshing course details:', err);
+      setError('Failed to refresh course. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
-  // Fetch details for all modules in the course
+  // Fetch details for all modules in the course - Enhanced with refresh logging
   const fetchModuleDetails = async (course: Course) => {
     if (!course || !course.module_ids || course.module_ids.length === 0) {
       return;
@@ -97,12 +146,21 @@ const CourseDetailsScreen = () => {
     
     try {
       setLoadingModules(true);
+      console.log('🔄 REFRESHING MODULE DETAILS for', course.module_ids.length, 'modules');
+      
       const moduleDetailsPromises = course.module_ids.map(async (moduleId) => {
         const response = await apiService.getModuleDetails(moduleId);
         
         if (!response.success || !response.data) {
           throw new Error(`Failed to fetch module ${moduleId}: ${response.error}`);
         }
+        
+        // Log the fresh module progress data
+        console.log(`📋 Fresh data for module ${response.data.module.title}:`, {
+          status: response.data.progress?.status,
+          completed_sections: response.data.progress?.completed_sections,
+          progress_percentage: response.data.progress?.progress_percentage
+        });
         
         return {
           ...response.data.module,
@@ -114,6 +172,8 @@ const CourseDetailsScreen = () => {
       const moduleDetails = await Promise.all(moduleDetailsPromises);
       setCourseDetails(prev => prev ? { ...prev, modules: moduleDetails } : null);
       
+      console.log('✅ All module details refreshed successfully');
+      
       // Expand the first in-progress module
       const inProgressModule = moduleDetails.find(m => m.progress.status === 'in_progress');
       if (inProgressModule) {
@@ -123,15 +183,14 @@ const CourseDetailsScreen = () => {
       }
       
     } catch (err) {
-      console.error('Error fetching module details:', err);
-      Alert.alert('Error', 'Failed to load module details. Please try again.');
+      console.error('❌ Error refreshing module details:', err);
+      Alert.alert('Error', 'Failed to refresh module details. Please try again.');
     } finally {
       setLoadingModules(false);
     }
   };
   
   const toggleModuleExpansion = (moduleId: string) => {
-    // Reset animation values if closing or switching modules
     if (expandedModule !== null) {
       setPreviousExpandedModule(expandedModule);
       textContentAnim.setValue(0);
@@ -145,7 +204,6 @@ const CourseDetailsScreen = () => {
     } else {
       setExpandedModule(moduleId);
       
-      // Start sequential animations when a module is expanded
       Animated.stagger(150, [
         Animated.timing(textContentAnim, {
           toValue: 1,
@@ -170,73 +228,89 @@ const CourseDetailsScreen = () => {
       ]).start();
     }
   };
-  
-  const getModuleCompletionStatus = (module: ModuleWithProgress) => {
-    if (!module.progress) return 'not_started';
-    return module.progress.status;
+
+  // SIMPLIFIED: Check if module is completed based ONLY on chatbot_completed
+  const isModuleCompleted = (module: ModuleWithProgress) => {
+    if (!module.progress || !module.progress.completed_sections) return false;
+    
+    // ONLY CRITERIA: chatbot_completed must be present
+    const hasCompletedChatbot = module.progress.completed_sections.includes('chatbot_completed');
+    
+    console.log(`📋 Module ${module.title}: chatbot_completed = ${hasCompletedChatbot}`);
+    
+    return hasCompletedChatbot;
   };
-  
-  // Get content type completion status
+
+  // SIMPLIFIED: Show all content types as available (no individual completion tracking)
   const isContentTypeCompleted = (module: ModuleWithProgress, contentType: string) => {
+    // If module is completed (has chatbot_completed), show everything as completed
+    if (isModuleCompleted(module)) {
+      return true;
+    }
+    
+    // Otherwise, just check if they've accessed individual sections (for visual feedback only)
     if (!module.progress || !module.progress.completed_sections) return false;
     return module.progress.completed_sections.includes(contentType);
   };
-  
-  // Function to get contentType label based on status
-  const getContentTypeLabel = (module: ModuleWithProgress, contentType: string) => {
-    if (isContentTypeCompleted(module, contentType)) {
-      return 'Completed';
-    }
-    
-    // Logic for determining if content is in progress or locked
-    const contentTypes = ['content_viewed', 'video_watched', 'resources_accessed', 'case_completed'];
-    const contentIndex = contentTypes.indexOf(contentType);
-    const prevContentType = contentIndex > 0 ? contentTypes[contentIndex - 1] : null;
-    
-    
-      return 'In Progress';
-    
-    
-    
-  };
-  
+
+  // SIMPLIFIED: Calculate progress based ONLY on completed modules (chatbot_completed)
   const calculateOverallProgress = () => {
     if (!courseDetails || !courseDetails.modules || courseDetails.modules.length === 0) {
       return 0;
     }
     
-    return courseDetails.progress_percentage || 0;
+    const totalModules = courseDetails.modules.length;
+    const completedModules = courseDetails.modules.filter(module => isModuleCompleted(module)).length;
+    
+    const progressPercentage = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
+    
+    console.log('🎯 SIMPLIFIED COURSE PROGRESS:', {
+      completed_modules: completedModules,
+      total_modules: totalModules,
+      progress: progressPercentage + '%',
+      completed_module_titles: courseDetails.modules
+        .filter(module => isModuleCompleted(module))
+        .map(m => m.title)
+    });
+    
+    return progressPercentage;
+  };
+
+  // Count completed modules for display
+  const getCompletedModulesCount = () => {
+    if (!courseDetails || !courseDetails.modules) return 0;
+    return courseDetails.modules.filter(module => isModuleCompleted(module)).length;
   };
   
   // Navigate to specific module content
   const navigateToModuleContent = (module: ModuleWithProgress, contentType: string) => {
-      let pathname = '';
-      
-      switch (contentType) {
-        case 'content_viewed':
-          pathname = '/(module)/content-viewer';
-          break;
-        case 'video_watched':
-          pathname = '/(module)/video-player';
-          break;
-        case 'resources_accessed':
-          pathname = '/(module)/resources';
-          break;
-        case 'case_completed':
-          pathname = '/(module)/case-study';
-          break;
-        default:
-          pathname = '/(module)/content-viewer';
-      }
+    let pathname = '';
+    
+    switch (contentType) {
+      case 'content_viewed':
+        pathname = '/(module)/content-viewer';
+        break;
+      case 'video_watched':
+        pathname = '/(module)/video-player';
+        break;
+      case 'resources_accessed':
+        pathname = '/(module)/resources';
+        break;
+      case 'case_completed':
+        pathname = '/(module)/case-study';
+        break;
+      default:
+        pathname = '/(module)/content-viewer';
+    }
 
-      router.push({
-        pathname,
-        params: {
-          moduleId: module.module_id,
-          contentType: contentType
-        }
-      });
-    };
+    router.push({
+      pathname,
+      params: {
+        moduleId: module.module_id,
+        contentType: contentType
+      }
+    });
+  };
   
   if (isLoading) {
     return (
@@ -324,16 +398,13 @@ const CourseDetailsScreen = () => {
               <TouchableOpacity 
                 className="bg-[#4DF0A9] px-6 py-3 rounded-full mt-3 self-start"
                 onPress={() => {
-                  // Find the first in-progress module
                   const inProgressModule = courseDetails.modules.find(m => 
                     m.progress && m.progress.status === 'in_progress'
                   );
                   
                   if (inProgressModule) {
-                    // Navigate to the appropriate content type
                     const contentTypes = ['content_viewed', 'video_watched', 'resources_accessed', 'case_completed'];
                     
-                    // Find the first incomplete content type
                     const nextContentType = contentTypes.find(type => 
                       !isContentTypeCompleted(inProgressModule, type)
                     ) || 'content_viewed';
@@ -350,11 +421,25 @@ const CourseDetailsScreen = () => {
           </>
         )}
         
-        {/* Progress Section */}
+        {/* Progress Section - Enhanced with real-time refresh */}
         <View className="px-5 py-4">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-[#1E4B88] text-xl font-bold">Your Progress</Text>
-            <Text className="text-[#1E4B88] text-xl font-bold">{calculateOverallProgress()}%</Text>
+            <View className="flex-row items-center">
+              <Text className="text-[#1E4B88] text-xl font-bold">{calculateOverallProgress()}%</Text>
+              <TouchableOpacity 
+                className="ml-3 p-1"
+                onPress={() => {
+                  const courseIdStr = courseId ? String(courseId) : null;
+                  if (courseIdStr) {
+                    console.log('🔄 Manual refresh triggered');
+                    refreshCourseData(courseIdStr);
+                  }
+                }}
+              >
+                <Icon name="refresh" size={20} color="#1E4B88" />
+              </TouchableOpacity>
+            </View>
           </View>
           
           {/* Progress Bar */}
@@ -365,7 +450,7 @@ const CourseDetailsScreen = () => {
             />
           </View>
           
-          {/* Progress Stats */}
+          {/* Progress Stats - SIMPLIFIED to show only chatbot-completed modules */}
           <View className="flex-row justify-between mb-6">
             <View className="items-center">
               <Text className="text-2xl font-bold text-gray-800">
@@ -376,7 +461,7 @@ const CourseDetailsScreen = () => {
             
             <View className="items-center">
               <Text className="text-2xl font-bold text-gray-800">
-                {courseDetails.modules.filter(m => m.progress && m.progress.status === 'completed').length}
+                {getCompletedModulesCount()}
               </Text>
               <Text className="text-gray-500 text-sm">Completed</Text>
             </View>
@@ -431,8 +516,8 @@ const CourseDetailsScreen = () => {
                       </Text>
                     </View>
                     
-                    {/* Completed badge */}
-                    {module.progress && module.progress.status === 'completed' && (
+                    {/* Completed badge - ONLY shows if chatbot_completed exists */}
+                    {isModuleCompleted(module) && (
                       <View className="mr-3">
                         <View className="bg-[#4DF0A9] rounded-full p-1">
                           <Icon name="check" size={12} color="white" />
@@ -447,63 +532,65 @@ const CourseDetailsScreen = () => {
                     />
                   </TouchableOpacity>
                   
-                  {/* Only show the icons row when module is NOT expanded */}
+                  {/* Module content sections - all always available */}
                   {expandedModule !== module.module_id && (
-                  <View className="flex-row justify-around px-4 py-3">
-                    {/* Text + Voice Icon */}
-                    <View className="items-center">
-                      <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'content_viewed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center`}>
-                        <Icon 
-                          name="headphones" 
-                          size={16} 
-                          color={isContentTypeCompleted(module, 'content_viewed') ? "white" : "#64748B"} 
-                        />
+                    <View className="flex-row justify-around px-4 py-3">
+                      {/* Text + Voice Icon */}
+                      <View className="items-center">
+                        <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'content_viewed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center`}>
+                          <Icon 
+                            name="headphones" 
+                            size={16} 
+                            color={isContentTypeCompleted(module, 'content_viewed') ? "white" : "#64748B"} 
+                          />
+                        </View>
+                        <Text className="text-xs text-gray-600 mt-1">Text</Text>
                       </View>
-                      <Text className="text-xs text-gray-600 mt-1">Text</Text>
-                    </View>
-                    
-                    {/* Videos Icon - Only show if video exists */}
-                    {module.video_url && module.video_url.trim() !== '' && (
+                      
+                      {/* Videos Icon - Only show if video exists */}
+                      {module.video_url && module.video_url.trim() !== '' && (
+                        <View className="items-center">
+                          <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'video_watched') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center`}>
+                            <Icon 
+                              name="video" 
+                              size={16} 
+                              color={isContentTypeCompleted(module, 'video_watched') ? "white" : "#64748B"} 
+                            />
+                          </View>
+                          <Text className="text-xs text-gray-600 mt-1">Videos</Text>
+                        </View>
+                      )}
+                      
+                      {/* Resources Icon */}
+                      {module.external_resources && module.external_resources.length > 0 && (
+                        <View className="items-center">
+                          <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'resources_accessed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center`}>
+                            <Icon 
+                              name="link-variant" 
+                              size={16} 
+                              color={isContentTypeCompleted(module, 'resources_accessed') ? "white" : "#64748B"} 
+                            />
+                          </View>
+                          <Text className="text-xs text-gray-600 mt-1">Docs</Text>
+                        </View>
+                      )}
+                      
+                      {/* Case Study Icon */}
                       <View className="items-center">
                         <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center`}>
                           <Icon 
-                            name="video" 
+                            name="notebook" 
                             size={16} 
                             color={isContentTypeCompleted(module, 'chatbot_completed') ? "white" : "#64748B"} 
                           />
                         </View>
-                        <Text className="text-xs text-gray-600 mt-1">Videos</Text>
+                        <Text className="text-xs text-gray-600 mt-1">Case</Text>
                       </View>
-                    )}
-                    
-                    {/* Resources Icon */}
-                    <View className="items-center">
-                      <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'resources_accessed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center`}>
-                        <Icon 
-                          name="link-variant" 
-                          size={16} 
-                          color={isContentTypeCompleted(module, 'resources_accessed') ? "white" : "#64748B"} 
-                        />
-                      </View>
-                      <Text className="text-xs text-gray-600 mt-1">Docs</Text>
                     </View>
-                    
-                    {/* Case Study Icon */}
-                    <View className="items-center">
-                      <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'case_completed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center`}>
-                        <Icon 
-                          name="notebook" 
-                          size={16} 
-                          color={isContentTypeCompleted(module, 'case_completed') ? "white" : "#64748B"} 
-                        />
-                      </View>
-                      <Text className="text-xs text-gray-600 mt-1">Case</Text>
-                    </View>
-                  </View>
-                )}
+                  )}
                 </View>
                 
-                {/* Expanded Content - Stacked Content Types */}
+                {/* Expanded Content - All sections always available */}
                 {expandedModule === module.module_id && (
                   <View className="bg-gray-50 px-4 py-4 border-t border-gray-200">
                     {/* Text + Voice Section */}
@@ -536,33 +623,33 @@ const CourseDetailsScreen = () => {
                     
                     {/* Videos Section - Only show if there's a video URL */}
                     {module.video_url && module.video_url.trim() !== '' && (
-                  <View className="mb-4 bg-white rounded-lg p-3 shadow-sm">
-                    <View className="flex-row items-center mb-2">
-                      <View className={`w-12 h-12 rounded-full ${isContentTypeCompleted(module, 'video_watched') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center mr-3`}>
-                        <Icon 
-                          name="video" 
-                          size={24} 
-                          color={isContentTypeCompleted(module, 'video_watched') ? "white" : "#64748B"} 
-                        />
-                      </View>
-                      <View className="flex-1">
-                        <View className="flex-row justify-between items-center">
-                          <Text className="text-gray-800 font-bold text-lg">Video Lessons</Text>
-                          <Text className="text-gray-500 text-sm">~15 min</Text>
+                      <View className="mb-4 bg-white rounded-lg p-3 shadow-sm">
+                        <View className="flex-row items-center mb-2">
+                          <View className={`w-12 h-12 rounded-full ${isContentTypeCompleted(module, 'video_watched') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center mr-3`}>
+                            <Icon 
+                              name="video" 
+                              size={24} 
+                              color={isContentTypeCompleted(module, 'video_watched') ? "white" : "#64748B"} 
+                            />
+                          </View>
+                          <View className="flex-1">
+                            <View className="flex-row justify-between items-center">
+                              <Text className="text-gray-800 font-bold text-lg">Video Lessons</Text>
+                              <Text className="text-gray-500 text-sm">~15 min</Text>
+                            </View>
+                            <Text className="text-gray-600 text-sm">Watch instructor-led video explanations</Text>
+                          </View>
                         </View>
-                        <Text className="text-gray-600 text-sm">Watch instructor-led video explanations</Text>
+                        <TouchableOpacity 
+                          className={`${isContentTypeCompleted(module, 'video_watched') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
+                          onPress={() => navigateToModuleContent(module, 'video_watched')}
+                        >
+                          <Text className="text-white font-bold">
+                            {isContentTypeCompleted(module, 'video_watched') ? 'Review' : 'Start'}
+                          </Text>
+                        </TouchableOpacity>
                       </View>
-                    </View>
-                    <TouchableOpacity 
-                      className={`${isContentTypeCompleted(module, 'video_watched') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
-                      onPress={() => navigateToModuleContent(module, 'video_watched')}
-                    >
-                      <Text className="text-white font-bold">
-                        {isContentTypeCompleted(module, 'video_watched') ? 'Review' : 'Start'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
+                    )}
                     
                     {/* Resources Section - Only show if there are external resources */}
                     {module.external_resources && module.external_resources.length > 0 && (
@@ -584,11 +671,11 @@ const CourseDetailsScreen = () => {
                           </View>
                         </View>
                         <TouchableOpacity 
-                          className={`${isContentTypeCompleted(module, 'case_submitted') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
+                          className={`${isContentTypeCompleted(module, 'resources_accessed') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
                           onPress={() => navigateToModuleContent(module, 'resources_accessed')}
                         >
                           <Text className="text-white font-bold">
-                            {isContentTypeCompleted(module, 'case_submitted') ? 'Review' : 'Start'}
+                            {isContentTypeCompleted(module, 'resources_accessed') ? 'Review' : 'Start'}
                           </Text>
                         </TouchableOpacity>
                       </View>

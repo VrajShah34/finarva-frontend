@@ -547,13 +547,19 @@ async getLeads(): Promise<ApiResponse<any>> {
     }, true);
   }
 
-  async submitAnswer(moduleId: string, answer: string): Promise<ApiResponse<SubmitAnswerResponse>> {
-    console.log('Submitting answer for module:', moduleId);
-    return this.makeRequest(API_PATHS.LMS, `/modules/${moduleId}/submit`, {
-      method: 'POST',
-      body: JSON.stringify({ answer }),
-    }, true);
+async submitAnswer(moduleId: string, answer: string): Promise<ApiResponse<SubmitAnswerResponse>> {
+  console.log('Submitting answer for module:', moduleId, 'Answer:', answer);
+  
+  // Special handling for chatbot_completed
+  if (answer === 'chatbot_completed') {
+    console.log('Submitting chatbot_completed - this will mark module as 100% done');
   }
+  
+  return this.makeRequest(API_PATHS.LMS, `/modules/${moduleId}/submit`, {
+    method: 'POST',
+    body: JSON.stringify({ answer }),
+  }, true);
+}
 
   async submitChatbotResponse(conversationId: string, answer: string): Promise<ApiResponse<ChatbotResponse>> {
     console.log('Submitting chatbot response for conversation:', conversationId);

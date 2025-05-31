@@ -79,10 +79,20 @@ const VideoPlayerScreen = () => {
     return null;
   };
 
-  const getNextScreen = () => {
+// In video-player.tsx, inside the getNextScreen function
+const getNextScreen = () => {
   const hasResources = moduleData?.module?.external_resources && moduleData.module.external_resources.length > 0;
   const hasCase = moduleData?.module?.case_scenario;
-  
+
+  // Skip video_watched section if no valid video
+  if (!videoId) {
+    apiService.submitAnswer(String(moduleId), 'video_skipped').then(response => {
+      if (response.success) {
+        console.log('Video skipped, progress updated');
+      }
+    });
+  }
+
   if (hasResources) {
     return {
       pathname: '/(module)/resources',
@@ -96,7 +106,7 @@ const VideoPlayerScreen = () => {
       label: 'Next: Assessment'
     };
   } else {
-    return null; // No next screen available
+    return null;
   }
 };
 

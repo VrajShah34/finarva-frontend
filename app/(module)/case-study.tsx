@@ -106,16 +106,41 @@ const CaseStudyScreen = () => {
     return String.fromCharCode(65 + index);
   };
 
-  const handleAIAssessmentComplete = (data?: { feedback: string; score: number | null; assessment: string }) => {
-    setShowAIAssessment(false);
-    if (data) {
-      setCompletionData(data);
-      // Auto-navigate back after 3 seconds
-      setTimeout(() => {
-        router.back();
-      }, 3000);
+const handleAIAssessmentComplete = async (data?: { feedback: string; score: number | null; assessment: string }) => {
+  setShowAIAssessment(false);
+  if (data) {
+    setCompletionData(data);
+    
+    try {
+      console.log('🚀 Submitting chatbot_completed - MODULE WILL BE INSTANTLY COMPLETED');
+      
+      // Single API call to mark module as 100% complete
+      const response = await apiService.submitAnswer(String(moduleId), 'chatbot_completed');
+      
+      if (response.success) {
+        console.log('✅ Module marked as completed - course progress updated in real-time');
+        
+        // Immediate redirect to course details page
+        setTimeout(() => {
+          if (moduleData?.module?.course_id) {
+            router.replace({
+              pathname: '/(app)/course-details',
+              params: { courseId: moduleData.module.course_id }
+            });
+          } else {
+            router.back();
+          }
+        }, 1500); // Reduced delay since everything is instant now
+      } else {
+        console.error('Failed to complete module:', response.error);
+        setTimeout(() => router.back(), 2000);
+      }
+    } catch (error) {
+      console.error('Error completing module:', error);
+      setTimeout(() => router.back(), 2000);
     }
-  };
+  }
+};
 
   const handleAIAssessmentClose = () => {
     setShowAIAssessment(false);
@@ -167,17 +192,6 @@ const CaseStudyScreen = () => {
           <Text className="text-2xl font-bold text-gray-800 mb-4">Case Scenario</Text>
           <View className="bg-white p-4 rounded-lg border border-gray-200">
             <Text className="text-gray-700 text-base leading-relaxed">{caseScenario.context}</Text>
-            <View className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <Text className="text-sm text-gray-700 mb-1">
-                <Text className="font-medium">Vitals:</Text> BP 165/95, HR 92, RR 18, O2 98%
-              </Text>
-              <Text className="text-sm text-gray-700 mb-1">
-                <Text className="font-medium">History:</Text> HTN, acute MI 2018
-              </Text>
-              <Text className="text-sm text-gray-700">
-                <Text className="font-medium">Lab results:</Text> Troponin is 0.12 ng/mL (normal range 0.04 ng/mL)
-              </Text>
-            </View>
           </View>
         </View>
 
@@ -275,10 +289,10 @@ const CaseStudyScreen = () => {
           <View className="mt-6 flex-row justify-between items-center">
             <Text className="text-gray-500 text-sm">Question 1 of 1</Text>
             <View className="flex-row items-center">
-              <Icon name="clock-outline" size={16} color="#666" />
-              <Text className="text-gray-500 text-sm ml-1">
+              {/* <Icon name="clock-outline" size={16} color="#666" /> */}
+              {/* <Text className="text-gray-500 text-sm ml-1">
                 {formatTime(timeRemaining)} remaining
-              </Text>
+              </Text> */}
             </View>
           </View>
         </View>
