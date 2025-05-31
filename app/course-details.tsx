@@ -7,14 +7,13 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Image,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   apiService,
@@ -337,8 +336,20 @@ const CourseDetailsScreen = () => {
   }
   
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <>
+          {/* Status Bar - positioned outside SafeAreaView for proper coloring */}
+          <StatusBar 
+              backgroundColor="white" 
+              barStyle="light-content" 
+              translucent={true}
+            />
+            
+            {/* Using SafeAreaView with edges to prevent content from going under status bar */}
+            <SafeAreaView 
+              edges={['right', 'left','top']} 
+              className="flex-1 bg-gray-50"
+              style={{ backgroundColor: "white" }}
+            >
       
       {/* Header */}
       <View className="px-4 py-3 flex-row justify-between items-center border-b border-gray-200">
@@ -361,12 +372,7 @@ const CourseDetailsScreen = () => {
           <TouchableOpacity className="mr-4">
             <Icon name="share-variant-outline" size={24} color="#1E4B88" />
           </TouchableOpacity>
-          <TouchableOpacity>
-            <Image 
-              source={require('../assets/images/react-logo.png')} 
-              className="w-9 h-9 rounded-full border border-gray-300"
-            />
-          </TouchableOpacity>
+          
         </View>
       </View>
       
@@ -722,6 +728,7 @@ const CourseDetailsScreen = () => {
         <View className="h-10" />
       </ScrollView>
     </SafeAreaView>
+    </>
   );
 };
 

@@ -710,40 +710,51 @@ if (lead.isSellable) {
   }
 
   // Add this function to handle the API call
-const sellLead = async (leadId: string) => {
-  try {
-    const response = await apiService.modifyLead(leadId, {
-      isSellable: true
-    });
+  const sellLead = async (leadId: string) => {
+    try {
+      // First, modify the lead to make it sellable
+      const response = await apiService.modifyLead(leadId, {
+        isSellable: true
+      });
 
-    if (response.success) {
-      // Update the lead in the local state
-      setCustomerLeads(prev => 
-        prev.map(lead => {
-          if (lead.id === leadId) {
-            return {
-              ...lead,
-              isSellable: true,
-              tags: [...(lead.tags?.filter(tag => tag !== 'My Lead') || []), 'Purchased']
-            };
-          }
-          return lead;
-        })
-      );
-      
-      // Show success message
-      Alert.alert('Success', 'Your lead is now available for sale');
-    } else {
-      Alert.alert('Error', 'Failed to sell lead. Please try again.');
+      if (response.success) {
+        // After successfully making the lead sellable, create the vector lead
+        const vectorResponse = await apiService.createVectorLead(leadId);
+        
+        if (vectorResponse.success) {
+          console.log('Vector lead created successfully:', vectorResponse.data?.message);
+        } else {
+          console.warn('Vector lead creation failed:', vectorResponse.error);
+          // We'll still continue as the main lead update was successful
+        }
+
+        // Update the lead in the local state
+        setCustomerLeads(prev => 
+          prev.map(lead => {
+            if (lead.id === leadId) {
+              return {
+                ...lead,
+                isSellable: true,
+                tags: [...(lead.tags?.filter(tag => tag !== 'My Lead') || []), 'For Sale']
+              };
+            }
+            return lead;
+          })
+        );
+        
+        // Show success message
+        Alert.alert('Success', 'Your lead is now available for sale in the marketplace');
+      } else {
+        Alert.alert('Error', 'Failed to sell lead. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error selling lead:', error);
+      Alert.alert('Error', 'An error occurred while trying to sell this lead');
+    } finally {
+      setShowSellLeadModal(false);
+      setSelectedLeadToSell(null);
     }
-  } catch (error) {
-    console.error('Error selling lead:', error);
-    Alert.alert('Error', 'An error occurred while trying to sell this lead');
-  } finally {
-    setShowSellLeadModal(false);
-    setSelectedLeadToSell(null);
-  }
-};
+  };
 
   return (
     <>
