@@ -298,6 +298,44 @@ export interface BulkCallResponse {
   }[];
 }
 
+export interface VectorLeadCreateResponse {
+  message: string;
+}
+
+export interface RecommendedLead {
+  _id: string;
+  buyer_gp_ids: string[];
+  contact: {
+    name: string;
+    phone: string;
+  };
+  createdAt: string;
+  interest: {
+    interest_level: 'low' | 'medium' | 'high';
+    products: string[];
+  };
+  is_sellable: boolean;
+  notes: string;
+  personal_data: {
+    age: number;
+    income: string;
+    occupation: string;
+    state: string;
+  };
+  referrer_gp_id: string;
+  score: number;
+  status: string;
+  summary: string;
+  updatedAt: string;
+}
+
+export interface RecommendationResponse {
+  gp_id: string;
+  recommendations: RecommendedLead[];
+  used_language_filter: string | null;
+  used_product_filters: string[] | null;
+}
+
 class ApiService {
   private async getAuthToken(): Promise<string | null> {
     try {
@@ -621,6 +659,76 @@ async scheduleBulkAICalls(callData: BulkCallRequest): Promise<ApiResponse<BulkCa
     };
   } catch (error) {
     console.error('Error scheduling bulk AI calls:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+// Add this new interface after your other interfaces
+
+
+// Add this new method to the ApiService class
+async createVectorLead(mongoId: string): Promise<ApiResponse<VectorLeadCreateResponse>> {
+  console.log('Creating vector lead for mongo ID:', mongoId);
+  try {
+    const response = await fetch('http://3.108.174.161:5000/vector-lead-create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ mongo_id: mongoId }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.message || 'Failed to create vector lead',
+      };
+    }
+    
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    console.error('Error creating vector lead:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+async getRecommendedLeads(gpId: string): Promise<ApiResponse<RecommendationResponse>> {
+  console.log('Fetching recommended leads for GP ID:', gpId);
+  try {
+    const response = await fetch('http://3.108.174.161:5000/gp-profile-recommend', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ gp_id: gpId }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.message || 'Failed to fetch recommended leads',
+      };
+    }
+    
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    console.error('Error fetching recommended leads:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',

@@ -334,9 +334,7 @@ const LearningScreen = () => {
         <View className="mb-8">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-[#1E4B88] text-xl font-bold">Recommended For You</Text>
-            <TouchableOpacity>
-              <Text className="text-blue-600 font-medium">View all</Text>
-            </TouchableOpacity>
+            
           </View>
           
           {isLoading ? (

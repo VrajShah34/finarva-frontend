@@ -5,14 +5,13 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Image,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   apiService,
@@ -263,8 +262,20 @@ const CourseDetailsScreen = () => {
   }
   
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <>
+          {/* Status Bar - positioned outside SafeAreaView for proper coloring */}
+          <StatusBar 
+              backgroundColor="white" 
+              barStyle="light-content" 
+              translucent={true}
+            />
+            
+            {/* Using SafeAreaView with edges to prevent content from going under status bar */}
+            <SafeAreaView 
+              edges={['right', 'left','top']} 
+              className="flex-1 bg-gray-50"
+              style={{ backgroundColor: "white" }}
+            >
       
       {/* Header */}
       <View className="px-4 py-3 flex-row justify-between items-center border-b border-gray-200">
@@ -287,12 +298,7 @@ const CourseDetailsScreen = () => {
           <TouchableOpacity className="mr-4">
             <Icon name="share-variant-outline" size={24} color="#1E4B88" />
           </TouchableOpacity>
-          <TouchableOpacity>
-            <Image 
-              source={require('../assets/images/react-logo.png')} 
-              className="w-9 h-9 rounded-full border border-gray-300"
-            />
-          </TouchableOpacity>
+          
         </View>
       </View>
       
@@ -531,11 +537,7 @@ const CourseDetailsScreen = () => {
             {isContentTypeCompleted(module, 'content_viewed') ? 'Completed' : 'Read and listen to module content'}
           </Text>
         </View>
-        <View className={`px-2 py-1 rounded-md ${isContentTypeCompleted(module, 'content_viewed') ? 'bg-green-100' : 'bg-blue-100'}`}>
-          <Text className={`text-xs font-medium ${isContentTypeCompleted(module, 'content_viewed') ? 'text-green-700' : 'text-blue-700'}`}>
-            {getContentTypeLabel(module, 'content_viewed')}
-          </Text>
-        </View>
+        
       </View>
       <TouchableOpacity 
         className={`${isContentTypeCompleted(module, 'content_viewed') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
@@ -575,11 +577,7 @@ const CourseDetailsScreen = () => {
               {isContentTypeCompleted(module, 'chatbot_completed') ? 'Completed' : 'Watch explanatory videos'}
             </Text>
           </View>
-          <View className={`px-2 py-1 rounded-md ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-green-100' : 'bg-blue-100'}`}>
-            <Text className={`text-xs font-medium ${isContentTypeCompleted(module, 'chatbot_completed') ? 'text-green-700' : 'text-blue-700'}`}>
-              {getContentTypeLabel(module, 'video_watched')}
-            </Text>
-          </View>
+         
         </View>
         <TouchableOpacity 
           className={`${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
@@ -620,11 +618,7 @@ const CourseDetailsScreen = () => {
               {isContentTypeCompleted(module, 'chatbot_completed') ? 'Completed' : `${module.external_resources.length} resources available`}
             </Text>
           </View>
-          <View className={`px-2 py-1 rounded-md ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-green-100' : 'bg-blue-100'}`}>
-            <Text className={`text-xs font-medium ${isContentTypeCompleted(module, 'chatbot_completed') ? 'text-green-700' : 'text-blue-700'}`}>
-              {getContentTypeLabel(module, 'resources_accessed')}
-            </Text>
-          </View>
+          
         </View>
         <TouchableOpacity 
           className={`${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
@@ -665,11 +659,7 @@ const CourseDetailsScreen = () => {
               {isContentTypeCompleted(module, 'chatbot_completed') ? 'Completed' : 'Practical application exercise'}
             </Text>
           </View>
-          <View className={`px-2 py-1 rounded-md ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-green-100' : 'bg-blue-100'}`}>
-            <Text className={`text-xs font-medium ${isContentTypeCompleted(module, 'chatbot_completed') ? 'text-green-700' : 'text-blue-700'}`}>
-              {getContentTypeLabel(module, 'case_completed')}
-            </Text>
-          </View>
+          
         </View>
         <TouchableOpacity 
           className={`${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
@@ -691,6 +681,7 @@ const CourseDetailsScreen = () => {
         <View className="h-10" />
       </ScrollView>
     </SafeAreaView>
+    </>
   );
 };
 
