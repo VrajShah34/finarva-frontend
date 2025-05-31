@@ -474,31 +474,6 @@ const CourseDetailsScreen = () => {
                         </View>
                         <Text className="text-xs text-gray-600 mt-1">Videos</Text>
                       </View>
-<<<<<<< Updated upstream
-                      
-                      {/* Resources Icon */}
-                      <View className="items-center">
-                        <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center`}>
-                          <Icon 
-                            name="link-variant" 
-                            size={16} 
-                            color={isContentTypeCompleted(module, 'chatbot_completed') ? "white" : "#64748B"} 
-                          />
-                        </View>
-                        <Text className="text-xs text-gray-600 mt-1">Docs</Text>
-                      </View>
-                      
-                      {/* Case Study Icon */}
-                      <View className="items-center">
-                        <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center`}>
-                          <Icon 
-                            name="notebook" 
-                            size={16} 
-                            color={isContentTypeCompleted(module, 'chatbot_completed') ? "white" : "#64748B"} 
-                          />
-                        </View>
-                        <Text className="text-xs text-gray-600 mt-1">Case</Text>
-=======
                     )}
                     
                     {/* Resources Icon */}
@@ -509,7 +484,6 @@ const CourseDetailsScreen = () => {
                           size={16} 
                           color={isContentTypeCompleted(module, 'resources_accessed') ? "white" : "#64748B"} 
                         />
->>>>>>> Stashed changes
                       </View>
                       <Text className="text-xs text-gray-600 mt-1">Docs</Text>
                     </View>
@@ -530,189 +504,6 @@ const CourseDetailsScreen = () => {
                 </View>
                 
                 {/* Expanded Content - Stacked Content Types */}
-<<<<<<< Updated upstream
-{expandedModule === module.module_id && (
-  <View className="bg-gray-50 px-4 py-4 border-t border-gray-200">
-    {/* Text + Voice Section */}
-    <Animated.View 
-      className="mb-4 bg-white rounded-lg p-3 shadow-sm"
-      style={{
-        opacity: textContentAnim,
-        transform: [{ 
-          translateX: textContentAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [-20, 0]
-          }) 
-        }]
-      }}
-    >
-      <View className="flex-row items-center mb-2">
-        <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'content_viewed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center mr-3`}>
-          <Icon 
-            name="headphones" 
-            size={16} 
-            color={isContentTypeCompleted(module, 'content_viewed') ? "white" : "#64748B"} 
-          />
-        </View>
-        <View className="flex-1">
-          <Text className="text-gray-800 font-medium">Module Text Content</Text>
-          <Text className="text-gray-500 text-sm">
-            {isContentTypeCompleted(module, 'content_viewed') ? 'Completed' : 'Read and listen to module content'}
-          </Text>
-        </View>
-        <View className={`px-2 py-1 rounded-md ${isContentTypeCompleted(module, 'content_viewed') ? 'bg-green-100' : 'bg-blue-100'}`}>
-          <Text className={`text-xs font-medium ${isContentTypeCompleted(module, 'content_viewed') ? 'text-green-700' : 'text-blue-700'}`}>
-            {getContentTypeLabel(module, 'content_viewed')}
-          </Text>
-        </View>
-      </View>
-      <TouchableOpacity 
-        className={`${isContentTypeCompleted(module, 'content_viewed') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
-        onPress={() => navigateToModuleContent(module, 'content_viewed')}
-      >
-        <Text className="text-white font-bold">
-          {isContentTypeCompleted(module, 'content_viewed') ? 'Review' : 'Start'}
-        </Text>
-      </TouchableOpacity>
-    </Animated.View>
-    
-    {/* Videos Section - Only show if there's a video URL */}
-    {module.video_url && (
-      <Animated.View 
-        className="mb-4 bg-white rounded-lg p-3 shadow-sm"
-        style={{
-          opacity: videoContentAnim,
-          transform: [{ 
-            translateX: videoContentAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [-20, 0]
-            }) 
-          }]
-        }}
-      >
-        <View className="flex-row items-center mb-2">
-          <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center mr-3`}>
-            <Icon 
-              name="video" 
-              size={16} 
-              color={isContentTypeCompleted(module, 'chatbot_completed') ? "white" : "#64748B"} 
-            />
-          </View>
-          <View className="flex-1">
-            <Text className="text-gray-800 font-medium">Video Content</Text>
-            <Text className="text-gray-500 text-sm">
-              {isContentTypeCompleted(module, 'chatbot_completed') ? 'Completed' : 'Watch explanatory videos'}
-            </Text>
-          </View>
-          <View className={`px-2 py-1 rounded-md ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-green-100' : 'bg-blue-100'}`}>
-            <Text className={`text-xs font-medium ${isContentTypeCompleted(module, 'chatbot_completed') ? 'text-green-700' : 'text-blue-700'}`}>
-              {getContentTypeLabel(module, 'video_watched')}
-            </Text>
-          </View>
-        </View>
-        <TouchableOpacity 
-          className={`${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
-          onPress={() => navigateToModuleContent(module, 'video_watched')}
-        >
-          <Text className="text-white font-bold">
-            {isContentTypeCompleted(module, 'chatbot_completed') ? 'Review' : 'Start'}
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
-    )}
-    
-    {/* Resources Section - Only show if there are external resources */}
-    {module.external_resources && module.external_resources.length > 0 && (
-      <Animated.View 
-        className="mb-4 bg-white rounded-lg p-3 shadow-sm"
-        style={{
-          opacity: resourcesContentAnim,
-          transform: [{ 
-            translateX: resourcesContentAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [-20, 0]
-            }) 
-          }]
-        }}
-      >
-        <View className="flex-row items-center mb-2">
-          <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center mr-3`}>
-            <Icon 
-              name="link-variant" 
-              size={16} 
-              color={isContentTypeCompleted(module, 'chatbot_completed') ? "white" : "#64748B"} 
-            />
-          </View>
-          <View className="flex-1">
-            <Text className="text-gray-800 font-medium">Additional Resources</Text>
-            <Text className="text-gray-500 text-sm">
-              {isContentTypeCompleted(module, 'chatbot_completed') ? 'Completed' : `${module.external_resources.length} resources available`}
-            </Text>
-          </View>
-          <View className={`px-2 py-1 rounded-md ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-green-100' : 'bg-blue-100'}`}>
-            <Text className={`text-xs font-medium ${isContentTypeCompleted(module, 'chatbot_completed') ? 'text-green-700' : 'text-blue-700'}`}>
-              {getContentTypeLabel(module, 'resources_accessed')}
-            </Text>
-          </View>
-        </View>
-        <TouchableOpacity 
-          className={`${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
-          onPress={() => navigateToModuleContent(module, 'resources_accessed')}
-        >
-          <Text className="text-white font-bold">
-            {isContentTypeCompleted(module, 'chatbot_completed') ? 'Review' : 'Start'}
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
-    )}
-    
-    {/* Case Study Section - Only show if there's a case scenario */}
-    {module.case_scenario && (
-      <Animated.View 
-        className="mb-1 bg-white rounded-lg p-3 shadow-sm"
-        style={{
-          opacity: caseStudyContentAnim,
-          transform: [{ 
-            translateX: caseStudyContentAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [-20, 0]
-            }) 
-          }]
-        }}
-      >
-        <View className="flex-row items-center mb-2">
-          <View className={`w-8 h-8 rounded-full ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#1E4B88]' : 'bg-gray-200'} items-center justify-center mr-3`}>
-            <Icon 
-              name="notebook" 
-              size={16} 
-              color={isContentTypeCompleted(module, 'chatbot_completed') ? "white" : "#64748B"} 
-            />
-          </View>
-          <View className="flex-1">
-            <Text className="text-gray-800 font-medium">Case Study</Text>
-            <Text className="text-gray-500 text-sm">
-              {isContentTypeCompleted(module, 'chatbot_completed') ? 'Completed' : 'Practical application exercise'}
-            </Text>
-          </View>
-          <View className={`px-2 py-1 rounded-md ${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-green-100' : 'bg-blue-100'}`}>
-            <Text className={`text-xs font-medium ${isContentTypeCompleted(module, 'chatbot_completed') ? 'text-green-700' : 'text-blue-700'}`}>
-              {getContentTypeLabel(module, 'case_completed')}
-            </Text>
-          </View>
-        </View>
-        <TouchableOpacity 
-          className={`${isContentTypeCompleted(module, 'chatbot_completed') ? 'bg-[#4DF0A9]' : 'bg-[#1E4B88]'} py-2 rounded-lg items-center mt-1`}
-          onPress={() => navigateToModuleContent(module, 'case_completed')}
-        >
-          <Text className="text-white font-bold">
-            {isContentTypeCompleted(module, 'chatbot_completed') ? 'Review' : 'Start'}
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
-    )}
-  </View>
-)}
-=======
                 {expandedModule === module.module_id && (
                   <View className="bg-gray-50 px-4 py-4 border-t border-gray-200">
                     {/* Text + Voice Section */}
@@ -836,7 +627,6 @@ const CourseDetailsScreen = () => {
                     )}
                   </View>
                 )}
->>>>>>> Stashed changes
               </View>
             ))
           )}
