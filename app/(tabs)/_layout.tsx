@@ -36,7 +36,7 @@ export default function TabLayout() {
           title: 'Leads',
           headerShown: false,
           tabBarIcon: ({ color }) => (
-            <FontAwesome5 name="phone-alt" size={22} color={color} />
+            <FontAwesome5 name="user-friends" size={22} color={color} />
           ),
           tabBarLabel: ({ color }) => (
             <Text style={{ color, fontSize: 12 }}>Leads</Text>
@@ -88,7 +88,7 @@ export default function TabLayout() {
           title: 'Profile',
           headerShown: false,
           tabBarIcon: ({ color }) => (
-            <Ionicons name="person" size={24} color={color} />
+            <Ionicons name="person-circle" size={24} color={color} />
           ),
           tabBarLabel: ({ color }) => (
             <Text style={{ color, fontSize: 12 }}>Profile</Text>

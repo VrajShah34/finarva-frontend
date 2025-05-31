@@ -210,14 +210,14 @@ const CallsScreen = () => {
           {/* Cold Calls Button */}
           <TouchableOpacity 
             className="bg-white mx-4 mb-4 rounded-2xl p-5 flex-row items-center justify-between shadow-sm border border-gray-100"
-            onPress={() => console.log('Cold calls pressed')}
+            onPress={() => router.push('/cold-calls')}
           >
             <View className="flex-row items-center flex-1">
               <View className="bg-blue-100 w-12 h-12 rounded-full items-center justify-center mr-4">
                 <MaterialCommunityIcons name="phone-plus" size={24} color="#1D4ED8" />
               </View>
               <View className="flex-1">
-                <Text className="text-blue-800 font-bold text-lg mb-1">Start Cold Calls</Text>
+                <Text className="text-blue-800 font-bold text-lg mb-1">View Cold Calls</Text>
                 <Text className="text-gray-600 text-sm">
                   Begin new sales calls with AI assistance
                 </Text>

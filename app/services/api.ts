@@ -1,5 +1,5 @@
 // services/api.ts
-const SERVER_BASE = 'http://192.168.76.89:5000';
+const SERVER_BASE = 'http://192.168.16.66:5000';
 const API_PATHS = {
   GP: '/api/gp',
   LMS: '/api/lms',
@@ -336,6 +336,11 @@ export interface RecommendationResponse {
   used_product_filters: string[] | null;
 }
 
+export interface QueryRecommendationResponse {
+  query: string;
+  recommendations: RecommendedLead[];
+}
+
 class ApiService {
   private async getAuthToken(): Promise<string | null> {
     try {
@@ -641,7 +646,7 @@ async modifyLead(leadId: string, data: any): Promise<ApiResponse<any>> {
  */
 async scheduleBulkAICalls(callData: BulkCallRequest): Promise<ApiResponse<BulkCallResponse>> {
   try {
-    const response = await fetch('http://localhost:8000/bulk-call', {
+    const response = await fetch('https://fa0a-180-151-5-26.ngrok-free.app/bulk-call', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -735,6 +740,39 @@ async getRecommendedLeads(gpId: string): Promise<ApiResponse<RecommendationRespo
     };
   } catch (error) {
     console.error('Error fetching recommended leads:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+async getQueryRecommendedLeads(query: string): Promise<ApiResponse<QueryRecommendationResponse>> {
+  console.log('Fetching leads for query:', query);
+  try {
+    const response = await fetch('http://3.108.174.161:5000/query-recommend', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.message || 'Failed to fetch query-based leads',
+      };
+    }
+    
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    console.error('Error fetching query-based leads:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',

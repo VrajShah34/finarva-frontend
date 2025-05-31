@@ -1,14 +1,14 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View
+  ScrollView,
+  StatusBar,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const AICopilotScreen = () => {
@@ -90,27 +90,35 @@ const AICopilotScreen = () => {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <StatusBar backgroundColor="#1E4B88" barStyle="light-content" />
+   <>
+         <StatusBar 
+           backgroundColor = "primary" 
+           barStyle="light-content" 
+           translucent={true}
+         />
+               
+         <SafeAreaView 
+           edges={['right', 'left','top']} 
+           className="flex-1 bg-gray-50"
+           style={{ backgroundColor: "primary"}}
+         >
       
       {/* App Bar */}
-      <View className="h-14 bg-blue-800 flex-row items-center justify-between px-4">
+      {/* <View className="h-14 bg-primary flex-row items-center justify-between px-4">
         <Text className="text-white text-xl font-bold">Gromo+</Text>
         <TouchableOpacity>
           <Icon name="menu" size={28} color="white" />
         </TouchableOpacity>
-      </View>
-      
+      </View> */}
+      <View className='flex-1 bg-gray-50'>
       <ScrollView className="flex-1">
         {/* Smart Call Assistant */}
-        <View className="bg-blue-800 p-4 flex-row justify-between items-center">
+        <View className="bg-primary p-4 flex-row justify-between items-center">
           <View>
             <Text className="text-white text-xl font-bold">Smart Call Assistant</Text>
             <Text className="text-blue-200 text-sm">Let AI guide your conversation</Text>
           </View>
-          <TouchableOpacity className="w-12 h-12 rounded-full bg-green-500 justify-center items-center">
-            <Icon name="cog" size={24} color="#1E4B88" />
-          </TouchableOpacity>
+          
         </View>
         
         {/* Current Customer Card */}
@@ -205,13 +213,13 @@ const AICopilotScreen = () => {
                 key={index} 
                 className={`p-3 rounded-lg mb-2 border-l-4 ${
                   suggestion.highlighted 
-                    ? 'bg-green-500 border-green-700' 
+                    ? 'bg-secondary border-green-700' 
                     : 'bg-white border-blue-800'
                 }`}
               >
                 <Text className={`text-base ${
                   suggestion.highlighted 
-                    ? 'text-white font-medium' 
+                    ? 'text-primary font-medium' 
                     : 'text-blue-800'
                 }`}>
                   {suggestion.text}
@@ -245,6 +253,7 @@ const AICopilotScreen = () => {
           </View>
         </View>
       </ScrollView>
+      </View>
       
       {/* Call Control Footer */}
       <View className="flex-row justify-between items-center p-4 bg-white border-t border-gray-100">
@@ -262,6 +271,7 @@ const AICopilotScreen = () => {
         </TouchableOpacity>
       </View>
     </SafeAreaView>
+    </>
   );
 };
 

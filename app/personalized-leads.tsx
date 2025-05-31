@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { apiService, RecommendedLead } from './services/api';
 
@@ -27,88 +27,52 @@ type LeadType = {
   notes: string;
 };
 
-export default function BuyLeadsScreen() {
+export default function PersonalizedLeadsScreen() {
   const router = useRouter();
-  const [activeFilters, setActiveFilters] = useState<string[]>(['Filters']);
+  const [query, setQuery] = useState<string>('');
   const [leads, setLeads] = useState<LeadType[]>([]);
-  const [filteredLeads, setFilteredLeads] = useState<LeadType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [showQueryModal, setShowQueryModal] = useState(false);
-  const [queryText, setQueryText] = useState('');
-  const [isSubmittingQuery, setIsSubmittingQuery] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Set status bar effect
   useEffect(() => {
-    if (Platform.OS === 'android') {
-      StatusBar.setBackgroundColor(primaryColor);
-      StatusBar.setBarStyle('light-content');
-    }
-    
-    // Load user profile from API
-    const loadUserProfile = async () => {
-      console.log("Loading user profile from API...");
+    // Retrieve the query from localStorage
+    const fetchQueryAndLeads = async () => {
       setLoading(true);
       try {
-        const profileResponse = await apiService.getProfile();
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        const savedQuery = await AsyncStorage.getItem('lastLeadQuery');
         
-        if (profileResponse.success && profileResponse.data) {
-          const profile = profileResponse.data.gp;
-          console.log('User profile loaded from API:', profile._id);
-          setUserProfile(profile);
-          
-          if (profile._id) {
-            fetchRecommendedLeads(profile._id);
-          } else {
-            console.error('Profile response has no _id field');
-            setLoading(false);
-            Alert.alert('Error', 'User profile is missing ID information');
-          }
-        } else {
-          console.error('Failed to load profile:', profileResponse.error);
+        if (!savedQuery) {
+          setError('No search query found. Please go back and try again.');
           setLoading(false);
-          Alert.alert('Error', profileResponse.error || 'Failed to load user profile');
+          return;
+        }
+        
+        setQuery(savedQuery);
+        
+        // Fetch leads based on the query
+        const response = await apiService.getQueryRecommendedLeads(savedQuery);
+        
+        if (response.success && response.data) {
+          // Transform API leads to our LeadType format
+          const transformedLeads = response.data.recommendations.map(lead => transformLeadData(lead));
+          setLeads(transformedLeads);
+        } else {
+          console.error('Failed to fetch query-based leads:', response.error);
+          setError(response.error || 'Failed to fetch leads');
+          setLeads([]);
         }
       } catch (error) {
-        console.error('Error loading user profile:', error);
+        console.error('Error in personalized leads:', error);
+        setError('An unexpected error occurred. Please try again.');
+        setLeads([]);
+      } finally {
         setLoading(false);
-        Alert.alert('Error', 'Failed to load user profile. Please try again.');
       }
     };
     
-    loadUserProfile();
-    
-    
-    return () => {};
+    fetchQueryAndLeads();
   }, []);
-  
-  const fetchRecommendedLeads = async (gpId: string) => {
-    console.log('Fetching recommended leads for GP ID:', gpId);
-    setLoading(true);
-    try {
-      const response = await apiService.getRecommendedLeads(gpId);
-      
-      if (response.success && response.data) {
-        // Transform API leads to our LeadType format
-        const transformedLeads = response.data.recommendations.map(lead => transformLeadData(lead));
-        setLeads(transformedLeads);
-        setFilteredLeads(transformedLeads); // Also set filtered leads initially
-      } else {
-        console.error('Failed to fetch recommended leads:', response.error);
-        Alert.alert('Error', 'Failed to fetch recommended leads');
-        // Set empty leads array
-        setLeads([]);
-        setFilteredLeads([]); // Also clear filtered leads
-      }
-    } catch (error) {
-      console.error('Error fetching recommended leads:', error);
-      Alert.alert('Error', 'An unexpected error occurred');
-      setLeads([]);
-      setFilteredLeads([]); // Also clear filtered leads
-    } finally {
-      setLoading(false);
-    }
-  };
   
   const transformLeadData = (apiLead: RecommendedLead): LeadType => {
     // Generate a color based on the lead ID to ensure consistency
@@ -174,31 +138,8 @@ export default function BuyLeadsScreen() {
     };
   };
   
-  const toggleFilter = (filter: string) => {
-  if (filter === 'Filters') {
-    // If clicking the main Filters button
-    if (activeFilters.includes('Filters')) {
-      // If already active, remove all filters
-      setActiveFilters([]);
-    } else {
-      // If not active, set it as the only filter
-      setActiveFilters(['Filters']);
-    }
-  } else {
-    // For other filters
-    if (activeFilters.includes(filter)) {
-      // Remove this filter
-      setActiveFilters(activeFilters.filter(f => f !== filter));
-    } else {
-
-      const newFilters = [...activeFilters.filter(f => f !== 'Filters'), filter];
-      setActiveFilters(newFilters);
-    }
-  }
-};
-
   const handleBack = () => {
-    router.push('/my-leads'); // Navigate back to my-leads
+    router.push('/buy-leads'); // Navigate back to buy-leads
   };
   
   const handleBuyLead = (leadId: string) => {
@@ -216,21 +157,6 @@ export default function BuyLeadsScreen() {
         }
       ]
     );
-  };
-
-  const handleQuerySubmit = () => {
-    if (!queryText.trim()) {
-      Alert.alert('Please enter a query', 'Enter specific criteria to find matching leads');
-      return;
-    }
-    
-    // Store the query in localStorage so the personalized-leads page can access it
-    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-    AsyncStorage.setItem('lastLeadQuery', queryText).then(() => {
-      setShowQueryModal(false);
-      setQueryText('');
-      router.push('/personalized-leads');
-    });
   };
   
   // Show loading state
@@ -250,12 +176,12 @@ export default function BuyLeadsScreen() {
             <TouchableOpacity onPress={handleBack} className="mr-3">
               <Ionicons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
-            <Text className="text-white text-xl font-bold">Buy Leads</Text>
+            <Text className="text-white text-xl font-bold">Personalized Leads</Text>
           </View>
         </View>
         <View className="flex-1 bg-gray-50 justify-center items-center">
           <ActivityIndicator size="large" color={primaryColor} />
-          <Text className="mt-4 text-gray-600">Loading recommended leads...</Text>
+          <Text className="mt-4 text-gray-600">Searching for leads...</Text>
         </View>
       </SafeAreaView>
     );
@@ -278,43 +204,44 @@ export default function BuyLeadsScreen() {
             <TouchableOpacity onPress={handleBack} className="mr-3">
               <Ionicons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
-            <Text className="text-white text-xl font-bold">Buy Leads</Text>
+            <Text className="text-white text-xl font-bold">Personalized Leads</Text>
           </View>
-          <TouchableOpacity>
-            <Ionicons name="menu" size={24} color="white" />
-          </TouchableOpacity>
         </View>
         
         {/* Content Area */}
         <View className="flex-1 bg-gray-50">
           <ScrollView className="flex-1">
             <View className="px-5 py-6">
-              {/* Header with avatar - improved spacing */}
-              <View className="flex-row items-center mb-6">
-                
-                <View className="ml-3 flex-1">
-                  <Text style={{ color: primaryColor }} className="text-xl font-bold">Buy Leads</Text>
+              {/* Search query indicator */}
+              <View className="mb-6">
+                <Text style={{ color: primaryColor }} className="text-xl font-bold">Personalized Results</Text>
+                <View className="flex-row items-center mt-1">
                   <Text className="text-gray-600 text-sm">
-                    AI-curated, high-intent prospects selected for you
+                    Search: 
+                  </Text>
+                  <Text className="text-gray-800 text-sm font-medium ml-1">
+                    "{query}"
                   </Text>
                 </View>
               </View>
               
-              {/* Matching Banner - improved styling */}
+              {/* Results Summary */}
               <View style={{ backgroundColor: primaryColor }} className="p-5 rounded-xl mb-6 shadow-sm">
                 <View className="flex-row items-center mb-3">
-                  <MaterialCommunityIcons name="lightning-bolt" size={22} color="#FFD700" />
+                  <MaterialCommunityIcons name="text-search" size={22} color="#FFD700" />
                   <Text className="text-white text-lg font-bold ml-1">
-                    We found {filteredLeads.length} leads that match your strengths!
+                    We found {leads.length} leads matching your search!
                   </Text>
                 </View>
                 
-                <View className="flex-row items-center justify-between">
+                {leads.length > 0 && (
                   <View className="flex-row items-center flex-wrap">
-                    <View className="bg-[#3b82f6] bg-opacity-30 py-1.5 px-3 rounded-md flex-row items-center mr-3 mb-2">
-                      <MaterialIcons name="language" size={16} color="white" />
-                      <Text className="text-white ml-1 font-medium">Hindi</Text>
-                    </View>
+                    {Array.from(new Set(leads.map(lead => lead.location))).slice(0, 2).map(location => (
+                      <View key={location} className="bg-[#3b82f6] bg-opacity-30 py-1.5 px-3 rounded-md flex-row items-center mr-3 mb-2">
+                        <Ionicons name="location" size={16} color="white" />
+                        <Text className="text-white ml-1 font-medium">{location}</Text>
+                      </View>
+                    ))}
                     
                     <View className="bg-[#3b82f6] bg-opacity-30 py-1.5 px-3 rounded-md flex-row items-center mb-2">
                       <MaterialCommunityIcons name="tag-multiple" size={16} color="white" />
@@ -326,119 +253,58 @@ export default function BuyLeadsScreen() {
                       </Text>
                     </View>
                   </View>
-                </View>
+                )}
                 
-                <View className="flex-row items-center justify-between mt-4">
-                  <View className="flex-row items-center">
-                    <MaterialCommunityIcons name="medal" size={24} color="#FFD700" />
-                    <Text className="text-white font-bold text-xl ml-1">
-                      {filteredLeads.length > 0 ? `${Math.round(filteredLeads.reduce((sum, lead) => sum + lead.match, 0) / filteredLeads.length)}% Match` : '0% Match'}
+                {leads.length > 0 ? (
+                  <View className="flex-row items-center mt-3">
+                    <MaterialCommunityIcons name="medal" size={20} color="#FFD700" />
+                    <Text className="text-white font-medium ml-1">
+                      Average match score: {Math.round(leads.reduce((sum, lead) => sum + lead.match, 0) / leads.length)}%
                     </Text>
                   </View>
-                  
-                  <TouchableOpacity 
-                    className="bg-[#18FFAA] py-2 px-4 rounded-xl shadow-sm"
-                    onPress={() => setShowQueryModal(true)}
-                  >
-                    <View className="items-center">
-                      <View className="flex-row items-center">
-                        <MaterialCommunityIcons name="account-search" size={18} color={primaryColor} />
-                        <Text className="ml-1 font-medium" style={{ color: primaryColor }}>Get Personalized</Text>
-                      </View>
-                      <Text className="font-medium" style={{ color: primaryColor }}>Leads</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
+                ) : null}
               </View>
               
-              {/* Filters - improved spacing and layout */}
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false} 
-                contentContainerStyle={{ paddingRight: 20 }}
-                className="mb-7"
-              >
-                <TouchableOpacity 
-                  className={`flex-row items-center mr-3 py-2.5 px-5 rounded-full ${activeFilters.includes('Filters') ? '' : 'bg-white border border-gray-300'}`}
-                  onPress={() => toggleFilter('Filters')}
-                  style={activeFilters.includes('Filters') ? { backgroundColor: primaryColor } : null}
-                >
-                  <Ionicons 
-                    name="funnel" 
-                    size={18} 
-                    color={activeFilters.includes('Filters') ? "white" : primaryColor} 
-                  />
-                  <Text 
-                    className={`ml-2 font-medium ${activeFilters.includes('Filters') ? 'text-white' : ''}`}
-                    style={!activeFilters.includes('Filters') ? { color: primaryColor } : null}
-                  >
-                    Filters
+              {/* Error state */}
+              {error && (
+                <View className="bg-white rounded-xl p-8 mb-5 items-center justify-center">
+                  <MaterialCommunityIcons name="alert-circle-outline" size={50} color="#f87171" />
+                  <Text className="text-gray-800 text-lg mt-4 text-center font-medium">Error</Text>
+                  <Text className="text-gray-600 text-base mt-2 text-center">
+                    {error}
                   </Text>
-                </TouchableOpacity>
-                
-                {/* Create dynamic filters based on unique states from leads */}
-                {Array.from(new Set(leads.map(lead => lead.location))).map(location => (
                   <TouchableOpacity 
-                    key={location}
-                    className={`flex-row items-center mr-3 py-2.5 px-5 rounded-full ${activeFilters.includes(location) ? '' : 'bg-white border border-gray-300'}`}
-                    onPress={() => toggleFilter(location)}
-                    style={activeFilters.includes(location) ? { backgroundColor: primaryColor } : null}
+                    className="mt-6 px-6 py-3 rounded-lg"
+                    style={{ backgroundColor: primaryColor }}
+                    onPress={handleBack}
                   >
-                    <Ionicons 
-                      name="location" 
-                      size={18}
-                      color={activeFilters.includes(location) ? "white" : primaryColor} 
-                    />
-                    <Text 
-                      className={`ml-2 font-medium ${activeFilters.includes(location) ? 'text-white' : ''}`}
-                      style={!activeFilters.includes(location) ? { color: primaryColor } : null}
-                    >
-                      {location}
-                    </Text>
+                    <Text className="text-white font-medium">Go Back</Text>
                   </TouchableOpacity>
-                ))}
-                
-                {/* Create dynamic filters based on unique product categories */}
-                {Array.from(new Set(leads.flatMap(lead => lead.products))).map(product => {
-                  const displayProduct = product.charAt(0).toUpperCase() + product.slice(1).replace('_', ' ');
-                  return (
-                    <TouchableOpacity 
-                      key={product}
-                      className={`flex-row items-center mr-3 py-2.5 px-5 rounded-full ${activeFilters.includes(product) ? '' : 'bg-white border border-gray-300'}`}
-                      onPress={() => toggleFilter(product)}
-                      style={activeFilters.includes(product) ? { backgroundColor: primaryColor } : null}
-                    >
-                      <Ionicons 
-                        name={product.includes('credit') ? 'card' : 'shield-checkmark'} 
-                        size={18} 
-                        color={activeFilters.includes(product) ? "white" : primaryColor} 
-                      />
-                      <Text 
-                        className={`ml-2 font-medium ${activeFilters.includes(product) ? 'text-white' : ''}`}
-                        style={!activeFilters.includes(product) ? { color: primaryColor } : null}
-                      >
-                        {displayProduct}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
+                </View>
+              )}
               
               {/* No leads message */}
-              {filteredLeads.length === 0 && (
+              {!error && leads.length === 0 && (
                 <View className="bg-white rounded-xl p-8 mb-5 items-center justify-center">
                   <MaterialCommunityIcons name="magnify" size={50} color="#d1d5db" />
                   <Text className="text-gray-500 text-lg mt-4 text-center">No matching leads found</Text>
                   <Text className="text-gray-400 text-sm mt-2 text-center">
-                    Try adjusting your filters to see more results
+                    Try a different search query with more general terms
                   </Text>
+                  <TouchableOpacity 
+                    className="mt-6 px-6 py-3 rounded-lg"
+                    style={{ backgroundColor: primaryColor }}
+                    onPress={handleBack}
+                  >
+                    <Text className="text-white font-medium">Try Again</Text>
+                  </TouchableOpacity>
                 </View>
               )}
               
-              {/* Lead Cards - improved layout and spacing */}
-              {filteredLeads.map((lead) => (
+              {/* Lead Cards - same format as buy-leads */}
+              {leads.map((lead) => (
                 <View key={lead.id} className="bg-white rounded-xl p-5 mb-5 shadow-sm">
-                  {/* Lead Header - better spacing */}
+                  {/* Lead Header */}
                   <View className="flex-row items-center justify-between mb-4">
                     <View className="flex-row items-center">
                       <View 
@@ -476,7 +342,7 @@ export default function BuyLeadsScreen() {
                     </View>
                   </View>
                   
-                  {/* Lead Interest - improved layout */}
+                  {/* Lead Interest */}
                   <View className="flex-row justify-between items-center mb-4">
                     <View className="flex-row items-center flex-wrap flex-1 mr-2">
                       <Ionicons name="chatbubble-ellipses" size={18} color="#6b7280" />
@@ -486,7 +352,7 @@ export default function BuyLeadsScreen() {
                     </View>
                   </View>
                   
-                  {/* Lead Stats - improved spacing and badges */}
+                  {/* Lead Stats */}
                   <View className="flex-row justify-between items-center border-t border-gray-100 pt-4">
                     <View className="flex-row flex-wrap">
                       <View className="bg-green-100 px-3 py-1.5 rounded-full mr-2 mb-2">
@@ -527,7 +393,7 @@ export default function BuyLeadsScreen() {
                     </View>
                   </View>
                   
-                  {/* Match and Add Button - improved styling */}
+                  {/* Match and Add Button */}
                   <View className="flex-row items-center justify-between mt-4">
                     <View className="flex-row items-center pr-2">
                       <MaterialCommunityIcons name="medal" size={20} color="#10b981" />
@@ -561,58 +427,6 @@ export default function BuyLeadsScreen() {
           </ScrollView>
         </View>
       </SafeAreaView>
-      
-      {/* Query Modal */}
-      <Modal
-        visible={showQueryModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowQueryModal(false)}
-      >
-        <View className="flex-1 bg-black bg-opacity-50 justify-center items-center p-5">
-          <View className="bg-white w-full rounded-xl p-5 shadow-xl max-w-sm">
-            <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-lg font-bold" style={{ color: primaryColor }}>
-                Find Personalized Leads
-              </Text>
-              <TouchableOpacity onPress={() => setShowQueryModal(false)}>
-                <Ionicons name="close" size={24} color="gray" />
-              </TouchableOpacity>
-            </View>
-            
-            <Text className="text-gray-600 mb-4">
-              Describe what you're looking for. For example: "Home loan customers in Delhi" or "Credit card leads with high income"
-            </Text>
-            
-            <TextInput
-              className="bg-gray-100 p-4 rounded-lg text-gray-800 mb-4"
-              placeholder="Enter your search criteria..."
-              value={queryText}
-              onChangeText={setQueryText}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-            
-            <TouchableOpacity
-              className="py-3 rounded-lg items-center"
-              style={{ backgroundColor: primaryColor }}
-              onPress={handleQuerySubmit}
-              disabled={isSubmittingQuery}
-            >
-              {isSubmittingQuery ? (
-                <ActivityIndicator color="white" size="small" />
-              ) : (
-                <Text className="text-white font-medium">Search Leads</Text>
-              )}
-            </TouchableOpacity>
-            
-            <Text className="text-xs text-gray-500 mt-3 text-center">
-              Our AI will find the best matching leads based on your criteria.
-            </Text>
-          </View>
-        </View>
-      </Modal>
     </>
   );
 }
