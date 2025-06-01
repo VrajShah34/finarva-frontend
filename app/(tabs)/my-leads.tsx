@@ -1249,7 +1249,7 @@ const sellLead = async (leadId: string) => {
                     <View className="flex-1 flex-row items-center justify-center py-3 ml-1 opacity-70">
                       <Ionicons name="checkmark-circle" size={18} color={primaryColor} />
                       <Text style={{ color: primaryColor }} className="font-medium ml-1 text-sm">
-                        Sold
+                        Sellable
                       </Text>
                     </View>
                   )}

@@ -831,7 +831,23 @@ const AIColdCallsScreen = () => {
                                       <Text className="text-red-500 font-medium text-xs ml-1">End Call</Text>
                                     </TouchableOpacity>
                                   ) : (
-                                    <TouchableOpacity className="flex-row items-center bg-blue-50 px-3 py-1.5 rounded-md">
+                                    <TouchableOpacity className="flex-row items-center bg-blue-50 px-3 py-1.5 rounded-md"
+                                      onPress={() => {
+                                // If there's a conversation_id, navigate to AI call analysis
+                                if (call.conversation_id) {
+                                  router.push({
+                                    pathname: '/ai-call-analysis',
+                                    params: { 
+                                      conversationId: call.conversation_id,
+                                      callSid: call.callSid,      
+                                      leadName: leadInfo[call.id]?.contact?.name || call.name,
+                                      phoneNumber: call.phone,
+                                      location: call.location || 'Not specified'
+                                    }
+                                  });
+                                }
+                              }}
+                                    >
                                       <Icon name="text-box-outline" size={16} color="#1E4B88" />
                                       <Text className="text-[#1E4B88] font-medium text-xs ml-1">View Report</Text>
                                     </TouchableOpacity>

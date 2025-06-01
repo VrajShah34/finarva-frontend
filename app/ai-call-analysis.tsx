@@ -136,7 +136,7 @@ export default function AICallAnalysisScreen() {
       setLoading(true);
       try {
         // Use the API endpoint from your requirements
-        const response = await fetch(`https://1e1c-14-194-2-90.ngrok-free.app/conversation/${conversationId}`);
+        const response = await fetch(`https://resolutions-consequently-covered-gathered.trycloudflare.com/conversation/${conversationId}`);
         const data = await response.json();
         
         if (data.success && data.conversation) {

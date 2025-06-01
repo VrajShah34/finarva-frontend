@@ -1,8 +1,9 @@
 // services/api.ts
-const SERVER_BASE = 'http://192.168.16.66:5000';
+const SERVER_BASE = 'http://192.168.76.66:5000';
 const API_PATHS = {
   GP: '/api/gp',
   LMS: '/api/lms',
+  NORMAL :'/api'
 };
 
 export interface RegisterRequest {
@@ -464,6 +465,128 @@ export interface ConversationAnalysisResponse {
   analysis: any;
 }
 
+// Add this interface near the other interfaces in api.ts
+export interface ConversationsResponse {
+  success: boolean;
+  conversations: Array<{
+    _id: string;
+    conversation_id: string;
+    callSid: string;
+    lead_id: string;
+    status: string;
+    call_duration: number;
+    summary: string;
+    interests: string[];
+    createdAt: string;
+    updatedAt: string;
+    interest: {
+      products: string[];
+      interest_level: string;
+      budget_range: string;
+      urgency_level: string;
+    };
+    personal_data: {
+      occupation: string;
+      age: number | null;
+      income: number | null;
+      state: string;
+    };
+    transcript: Array<{
+      type: string;
+      text: string;
+      timestamp: string;
+      _id: string;
+    }>;
+    sentiment_analysis?: {
+      overall_sentiment: string;
+      user_sentiment: string;
+      agent_performance: string;
+    };
+    key_insights?: {
+      main_topics: string[];
+      user_concerns: string[];
+      next_steps: string[];
+      product_interest_level: string;
+      decision_timeline: string;
+    };
+  }>;
+  total: number;
+  filters_applied: Record<string, any>;
+}
+
+export interface ConversationAnalysisResult {
+  analysis: {
+    bad_points: string[];
+    bad_transcript: string;
+    good_points: string[];
+    intent: string;
+    problematic_messages: Array<{
+      issue: string;
+      message_number: number;
+      message_text: string;
+      suggestion: string;
+    }>;
+    sentiment: string;
+    theory: string;
+    topic: string;
+  };
+  analysis_id: string;
+  created_at: string;
+  lead_id: string;
+  status: string;
+  summary: {
+    agent_messages: number;
+    total_issues: number;
+    total_messages: number;
+    user_messages: number;
+  };
+}
+
+export interface CreateCourseFromPromptResponse {
+  success: boolean;
+  message: string;
+  course_id?: string;
+}
+
+export interface CopilotAnalysisItem {
+  _id: string;
+  agent_messages: number;
+  agent_name: string | null;
+  analysis: {
+    bad_points: string[];
+    bad_transcript: string;
+    good_points: string[];
+    intent: string;
+    problematic_messages: Array<{
+      issue: string;
+      message_number: number;
+      message_text: string;
+      suggestion: string;
+    }>;
+    sentiment: string;
+    theory: string;
+    topic: string;
+  };
+  analysis_id: string;
+  call_duration: number | null;
+  created_at: string;
+  department: string | null;
+  lead_id: string;
+  total_issues: number;
+  total_messages: number;
+  transcript: Array<{
+    message: string;
+    role: string;
+  }>;
+  user_messages: number;
+}
+
+export interface CopilotAnalysisResponse {
+  count: number;
+  data: CopilotAnalysisItem[];
+  status: string;
+}
+
 class ApiService {
   public async getAuthToken(): Promise<string | null> {
     try {
@@ -623,6 +746,37 @@ class ApiService {
     }, true);
   }
 
+  async createCourseFromPrompt(topic: string): Promise<ApiResponse<CreateCourseFromPromptResponse>> {
+  console.log('Creating course from prompt:', topic);
+  try {
+    const token = await this.getAuthToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      return {
+        success: false,
+        error: 'Authentication token not found'
+      };
+    }
+    
+    return this.makeRequest(API_PATHS.NORMAL, '/priority-queue', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ term: `${topic}` , priority : 10 }),
+    }, true);
+  } catch (error) {
+    console.error('Error in createCourseFromPrompt:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+}
+
   async startCourse(courseId: string): Promise<ApiResponse<CourseStartResponse>> {
     console.log('Starting course:', courseId);
     return this.makeRequest(API_PATHS.LMS, `/courses/${courseId}/start`, {
@@ -772,7 +926,7 @@ async scheduleBulkAICalls(callData: BulkCallRequest): Promise<ApiResponse<BulkCa
     console.log('Scheduling bulk AI calls with data:', JSON.stringify(callData, null, 2));
     
     // Make request with NO headers at all
-    const response = await fetch('https://1e1c-14-194-2-90.ngrok-free.app/bulk-call', {
+    const response = await fetch('https://resolutions-consequently-covered-gathered.trycloudflare.com/bulk-call', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -926,7 +1080,7 @@ async useCoins(amount: number): Promise<ApiResponse<UseCoinsResponse>> {
 // Add this method to fetch bulk call requests
 async getBulkCallRequests(): Promise<ApiResponse<BulkCallRequestsResponse>> {
   try {
-    const response = await fetch('https://1e1c-14-194-2-90.ngrok-free.app/bulk-call-requests', {
+    const response = await fetch('https://resolutions-consequently-covered-gathered.trycloudflare.com/bulk-call-requests', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -966,85 +1120,123 @@ async getLeadById(leadId: string): Promise<ApiResponse<LeadDetailsResponse>> {
   }, true);
 }
 
-/**
- * Generate AI recommendations based on chat history
- * @param data Chat history and context data
- * @returns Recommendations from the AI
- */
-async generateRecommendations(data: {
-  chatHistory: ChatMessage[];
-  productContext?: string;
-  customerDetails?: any;
-}): Promise<ApiResponse<RecommendationsResponse>> {
-  try {
-    const response = await fetch(`${this.baseUrl}/api/recommendations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.getAuthHeaders(),
-      },
-      body: JSON.stringify(data),
-    });
 
+// Add this method to the ApiService class
+async getConversations(): Promise<ApiResponse<ConversationsResponse>> {
+  console.log('Fetching conversations...');
+  try {
+    
+    
+    // Make the request to the API endpoint
+    const response = await fetch('https://resolutions-consequently-covered-gathered.trycloudflare.com/conversations', {
+      method: 'GET',
+      
+    });
+    
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorText = await response.text();
+      console.error('Error fetching conversations:', errorText);
       return {
         success: false,
-        error: errorData.message || 'Failed to generate recommendations',
+        error: `HTTP Error: ${response.status} ${response.statusText}`
       };
     }
-
-    const responseData = await response.json();
+    
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('Non-JSON response received:', contentType);
+      const text = await response.text();
+      console.error('Response text:', text.substring(0, 200) + '...');
+      return {
+        success: false,
+        error: `Invalid response format (${contentType}). Expected JSON.`
+      };
+    }
+    
+    // Parse the JSON response
+    const data = await response.json();
+    console.log('Conversations fetched successfully:', JSON.stringify(data, null, 2).substring(0, 200) + '...');
+    
     return {
       success: true,
-      data: responseData,
+      data
     };
   } catch (error) {
-    console.error('Error generating recommendations:', error);
+    console.error('Error in getConversations:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 }
 
-/**
- * Analyze conversation between financial advisor and customer
- * @param data Chat history and context data
- * @returns Analysis of the conversation
- */
-async analyzeConversation(data: {
-  chatHistory: ChatMessage[];
-  customerDetails?: any;
-}): Promise<ApiResponse<ConversationAnalysisResponse>> {
+async getConversationAnalysis(analysisId: string): Promise<ApiResponse<ConversationAnalysisResult>> {
+  console.log('Fetching conversation analysis for ID:', analysisId);
   try {
-    const response = await fetch(`${this.baseUrl}/api/recommendations/analyze`, {
-      method: 'POST',
+    const response = await fetch(`https://resolutions-consequently-covered-gathered.trycloudflare.com/conversation-analysis/${analysisId}`, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...this.getAuthHeaders(),
-      },
-      body: JSON.stringify(data),
+      }
     });
-
+    
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorText = await response.text();
+      console.error('Error fetching conversation analysis:', errorText);
       return {
         success: false,
-        error: errorData.message || 'Failed to analyze conversation',
+        error: `HTTP Error: ${response.status} ${response.statusText}`
       };
     }
-
-    const responseData = await response.json();
+    
+    const data = await response.json();
     return {
       success: true,
-      data: responseData,
+      data
     };
   } catch (error) {
-    console.error('Error analyzing conversation:', error);
+    console.error('Error in getConversationAnalysis:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+}
+
+
+
+async getCopilotAnalysisItems(): Promise<ApiResponse<CopilotAnalysisResponse>> {
+  console.log('Fetching co-pilot analysis items...');
+  try {
+    const response = await fetch('http://52.66.90.177:5000/get-analysis-items', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error fetching co-pilot analysis:', errorText);
+      return {
+        success: false,
+        error: `HTTP Error: ${response.status} ${response.statusText}`
+      };
+    }
+    
+    const data = await response.json();
+    console.log('Co-pilot analysis items fetched successfully:', data.count);
+    
+    return {
+      success: true,
+      data
+    };
+  } catch (error) {
+    console.error('Error in getCopilotAnalysisItems:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 }
