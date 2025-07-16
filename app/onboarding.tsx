@@ -501,7 +501,7 @@ export default function OnboardingScreen() {
                       </View>
                       
                       <Text className="text-[#04457E] text-xl font-semibold mb-3">
-                        "                                                                                                &quot;Confident Seller – Multilingual Urban Male with Experience&quot;"
+                        "                                                                                                                        &quot;Confident Seller – Multilingual Urban Male with Experience&quot;"
                       </Text>
                       
                       <View className="mb-2 flex-row">

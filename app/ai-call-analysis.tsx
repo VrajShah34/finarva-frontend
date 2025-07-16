@@ -460,7 +460,7 @@ export default function AICallAnalysisScreen() {
                   <View>
                     {conversationData?.key_insights?.main_topics?.slice(0, 2).map((topic, index) => (
                       <Text key={index} className="text-gray-800 font-medium" style={{ fontSize: 13 }}>
-                        "                                                                                                &quot;{topic}&quot;"
+                        "                                                                                                                        &quot;{topic}&quot;"
                       </Text>
                     ))}
                     {(!conversationData?.key_insights?.main_topics || 
