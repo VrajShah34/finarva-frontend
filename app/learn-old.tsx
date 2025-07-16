@@ -276,7 +276,7 @@ const DailyGoalScreen: React.FC<DailyGoalScreenProps> = ({ navigation }) => {
               <View className="flex-1">
                 <Text className="text-[#333] text-xl font-bold mb-1">Stay focused. Build consistency.</Text>
                 <Text className="text-[#777] text-base leading-5">
-                  Set your personalized sales or learning goal each morning — whether it's completing 3 calls, qualifying 2 leads.
+                  Set your personalized sales or learning goal each morning — whether it&apos;s completing 3 calls, qualifying 2 leads.
                 </Text>
               </View>
             </View>

@@ -202,7 +202,7 @@ export default function QuizScreen() {
             </Text>
             
             <Text className="text-gray-700 text-center mb-6">
-              Now it's time to take a quick knowledge quiz to help us understand your financial knowledge level and personalize your learning journey!
+              Now it&apos;s time to take a quick knowledge quiz to help us understand your financial knowledge level and personalize your learning journey!
             </Text>
             
             <Text className="text-gray-700 mb-6">

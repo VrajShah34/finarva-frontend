@@ -446,7 +446,7 @@ export default function HomeScreen() {
           <View className="bg-white rounded-xl p-5 shadow-sm">
             <View className="flex-row items-center mb-4">
               <MaterialCommunityIcons name="chart-timeline-variant" size={22} color={primaryColor} />
-              <Text className="text-gray-800 font-bold text-lg ml-2">This Week's Highlights</Text>
+              <Text className="text-gray-800 font-bold text-lg ml-2">This Week&apos;s Highlights</Text>
             </View>
             
             <View className="flex-row justify-between mb-5">
