@@ -1071,7 +1071,7 @@ const sellLead = async (leadId: string) => {
                         <Text className="text-sm font-medium text-purple-600">{customer.aiCallData.interest.urgency_level.replace('_', ' ')}</Text>
                       </View>
                     </View>
-                    {customer.aiCallData.notes && <Text className="text-sm text-gray-700 mt-2 italic">"{customer.aiCallData.notes}"</Text>}
+                    {customer.aiCallData.notes && <Text className="text-sm text-gray-700 mt-2 italic">&quot;{customer.aiCallData.notes}&quot;</Text>}
                   </View>
                 )}
 
@@ -1107,7 +1107,7 @@ const sellLead = async (leadId: string) => {
                         </View>
                       )}
                     </View>
-                    {customer.notes && <Text className="text-sm text-gray-700 mt-2 italic">"{customer.notes}"</Text>}
+                    {customer.notes && <Text className="text-sm text-gray-700 mt-2 italic">&quot;{customer.notes}&quot;</Text>}
                   </View>
                 )}
 
@@ -1412,7 +1412,7 @@ const sellLead = async (leadId: string) => {
                     )}
                   </TouchableOpacity>
                 </View>
-                <Text className="text-xs text-gray-500 mt-2 text-center">⏱️ AI calls typically complete in 5-10 minutes. You'll be notified when done.</Text>
+                <Text className="text-xs text-gray-500 mt-2 text-center">⏱️ AI calls typically complete in 5-10 minutes. You&apos;ll be notified when done.</Text>
               </View>
             </Animated.View>
           </View>
@@ -1430,7 +1430,7 @@ const sellLead = async (leadId: string) => {
       </View>
       
       <Text className="text-gray-600 text-center mb-5">
-        This lead will be listed for sale in the marketplace. You'll earn commission when another agent purchases it.
+        This lead will be listed for sale in the marketplace. You&apos;ll earn commission when another agent purchases it.
       </Text>
 
       {selectedLeadToSell && (

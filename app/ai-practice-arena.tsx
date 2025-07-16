@@ -139,7 +139,7 @@ export default function AIPracticeArenaScreen() {
           </View>
           
           <Text className="text-white mb-2">
-            Gromo AI pre-qualifies leads <Text className="text-[#18FFAA]">while you're offline</Text>, so you focus only on high-probability, warm conversations.
+            Gromo AI pre-qualifies leads <Text className="text-[#18FFAA]">while you&apos;re offline</Text>, so you focus only on high-probability, warm conversations.
           </Text>
           
           <Text className="text-white">

@@ -220,7 +220,7 @@ export default function PersonalizedLeadsScreen() {
                     Search: 
                   </Text>
                   <Text className="text-gray-800 text-sm font-medium ml-1">
-                    "                    &quot;{query}&quot;"
+                    "                                                                                &quot;{query}&quot;"
                   </Text>
                 </View>
               </View>

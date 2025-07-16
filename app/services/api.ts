@@ -217,12 +217,12 @@ export interface ChatbotResponse {
     createdAt: string;
     updatedAt: string;
     feedback_score?: number;
-    evaluation_history?: Array<{
+    evaluation_history?: {
       response: string;
       evaluation: string;
       score: number;
       timestamp: string;
-    }>;
+    }[];
     status?: string;
     final_evaluation?: {
       average_comprehension: number;
@@ -468,7 +468,7 @@ export interface ConversationAnalysisResponse {
 // Add this interface near the other interfaces in api.ts
 export interface ConversationsResponse {
   success: boolean;
-  conversations: Array<{
+  conversations: {
     _id: string;
     conversation_id: string;
     callSid: string;
@@ -491,12 +491,12 @@ export interface ConversationsResponse {
       income: number | null;
       state: string;
     };
-    transcript: Array<{
+    transcript: {
       type: string;
       text: string;
       timestamp: string;
       _id: string;
-    }>;
+    }[];
     sentiment_analysis?: {
       overall_sentiment: string;
       user_sentiment: string;
@@ -509,7 +509,7 @@ export interface ConversationsResponse {
       product_interest_level: string;
       decision_timeline: string;
     };
-  }>;
+  }[];
   total: number;
   filters_applied: Record<string, any>;
 }
@@ -520,12 +520,12 @@ export interface ConversationAnalysisResult {
     bad_transcript: string;
     good_points: string[];
     intent: string;
-    problematic_messages: Array<{
+    problematic_messages: {
       issue: string;
       message_number: number;
       message_text: string;
       suggestion: string;
-    }>;
+    }[];
     sentiment: string;
     theory: string;
     topic: string;
@@ -557,12 +557,12 @@ export interface CopilotAnalysisItem {
     bad_transcript: string;
     good_points: string[];
     intent: string;
-    problematic_messages: Array<{
+    problematic_messages: {
       issue: string;
       message_number: number;
       message_text: string;
       suggestion: string;
-    }>;
+    }[];
     sentiment: string;
     theory: string;
     topic: string;
@@ -574,10 +574,10 @@ export interface CopilotAnalysisItem {
   lead_id: string;
   total_issues: number;
   total_messages: number;
-  transcript: Array<{
+  transcript: {
     message: string;
     role: string;
-  }>;
+  }[];
   user_messages: number;
 }
 

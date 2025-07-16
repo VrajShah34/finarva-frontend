@@ -590,7 +590,7 @@ const IntegratedAICopilotScreen = () => {
                 <Icon name="phone-in-talk" size={48} color="#1E4B88" />
                 <Text style={styles.preCallTitle}>Ready to Start Call</Text>
                 <Text style={styles.preCallInstructions}>
-                  Click the "Start Call" button below to begin your conversation with {currentLead.name}.
+                  Click the &quot;Start Call&quot; button below to begin your conversation with {currentLead.name}.
                   AI suggestions will appear here during the call.
                 </Text>
               </View>
