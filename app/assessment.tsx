@@ -77,11 +77,11 @@ export default function AssessmentScreen() {
             </View>
             
             <Text className="text-[#1a4689] text-2xl font-bold mb-2 text-center">
-              Let's understand your strengths!
+              Let&apos;s understand your strengths!
             </Text>
             
             <Text className="text-gray-600 text-center">
-              We'll guide you through two quick steps to design your perfect learning path.
+              We&apos;ll guide you through two quick steps to design your perfect learning path.
             </Text>
 
             <View className="w-full h-[1px] bg-gray-200 mt-6" />
@@ -98,7 +98,7 @@ export default function AssessmentScreen() {
               </View>
               
               <Text className="text-blue-200 mb-6">
-                Speak to our AI and try pitching to a potential customer. We'll assess your 
+                Speak to our AI and try pitching to a potential customer. We&apos;ll assess your 
                 clarity, confidence & persuasion.
               </Text>
               

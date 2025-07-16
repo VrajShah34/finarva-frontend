@@ -201,7 +201,7 @@ const LearningScreen = () => {
 ) : error ? (
   <View className="bg-white rounded-2xl p-5 shadow-sm my-4 items-center justify-center" style={{ minHeight: 200 }}>
     <Icon name="alert-circle-outline" size={36} color="#FF6B6B" />
-    <Text className="mt-2 text-gray-700 text-center">Couldn't load your active course</Text>
+    <Text className="mt-2 text-gray-700 text-center">Couldn&apos;t load your active course</Text>
     <TouchableOpacity 
       className="mt-4 bg-[#1E4B88] px-4 py-2 rounded-lg"
       onPress={onRefresh}

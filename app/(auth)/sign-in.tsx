@@ -230,7 +230,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
           
           {/* Register Link */}
           <View className="flex-row justify-center items-center py-6">
-            <Text className="text-[#536B8E] text-base">Don't have an account? </Text>
+            <Text className="text-[#536B8E] text-base">Don&apos;t have an account? </Text>
             <TouchableOpacity onPress={navigateToRegister}>
               <Text className="text-[#4CAF50] text-base font-bold">Register</Text>
             </TouchableOpacity>

@@ -40,12 +40,12 @@ interface Conversation {
     income: number | null;
     state: string;
   };
-  transcript: Array<{
+  transcript: {
     type: string;
     text: string;
     timestamp: string;
     _id: string;
-  }>;
+  }[];
 }
 
 // Interface for co-pilot analysis items
@@ -58,12 +58,12 @@ interface CopilotAnalysisItem {
     bad_transcript: string;
     good_points: string[];
     intent: string;
-    problematic_messages: Array<{
+    problematic_messages: {
       issue: string;
       message_number: number;
       message_text: string;
       suggestion: string;
-    }>;
+    }[];
     sentiment: string;
     theory: string;
     topic: string;
@@ -75,10 +75,10 @@ interface CopilotAnalysisItem {
   lead_id: string;
   total_issues: number;
   total_messages: number;
-  transcript: Array<{
+  transcript: {
     message: string;
     role: string;
-  }>;
+  }[];
   user_messages: number;
 }
 

@@ -328,7 +328,7 @@ export default function OnboardingScreen() {
                     {/* Header */}
                     <View className="mb-12 pt-12">
                       <Text className="text-[#04457E] text-2xl font-bold mb-2">
-                        Let's personalize your journey
+                        Let&apos;s personalize your journey
                       </Text>
                       <Text className="text-gray-500 text-base">
                         Fill in your basic details to begin.
@@ -428,7 +428,7 @@ export default function OnboardingScreen() {
                             ))}
                           </View>
                           <Text className="text-gray-400 text-xs mt-1">
-                            Your preference guides AI's language and voice style.
+                            Your preference guides AI&apos;s language and voice style.
                           </Text>
                         </View>
                       </View>
@@ -501,7 +501,7 @@ export default function OnboardingScreen() {
                       </View>
                       
                       <Text className="text-[#04457E] text-xl font-semibold mb-3">
-                        "Confident Seller – Multilingual Urban Male with Experience"
+                        "                                                                                                                        &quot;Confident Seller – Multilingual Urban Male with Experience&quot;"
                       </Text>
                       
                       <View className="mb-2 flex-row">

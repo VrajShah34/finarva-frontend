@@ -647,7 +647,7 @@ export default function BuyLeadsScreen() {
             </View>
             
             <Text className="text-gray-600 mb-4">
-              Describe what you're looking for. For example: "Home loan customers in Delhi" or "Credit card leads with high income"
+              Describe what you&apos;re looking for. For example: &quot;Home loan customers in Delhi&quot; or &quot;Credit card leads with high income&quot;
             </Text>
             
             <TextInput

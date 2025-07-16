@@ -1019,7 +1019,7 @@ const AIColdCallsScreen = () => {
                   />
                 </View>
                 <Text className="text-gray-400 text-xs ml-1 mb-4">
-                  Example: "Ask about their retirement planning needs" or "Focus on child education plans"
+                  Example: &quot;Ask about their retirement planning needs&quot; or &quot;Focus on child education plans&quot;
                 </Text>
                 
                 {/* Example prompts */}
